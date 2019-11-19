@@ -7,11 +7,11 @@ server_ip = "127.0.0.1"
 server_port = 8080
 server_address = (server_ip, server_port)
 #create dict with msg and cheksum
-dict_to_send = protocol_library.create_dict(msg_from_client)
+json_to_send = protocol_library.create_json(msg_from_client)
 #udp connection
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
   #send to server
-  sock.sendto(dict_to_send, server_address)
+  sock.sendto(json_to_send, server_address)
   #based on recv from server check if data is valid
   recv_msg = protocol_library.client_verify_chksum(sock)
   #print msg form server
