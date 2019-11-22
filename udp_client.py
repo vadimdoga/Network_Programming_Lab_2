@@ -14,19 +14,6 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     #based on recv from server check if data is valid
     recv_msg = protocol_library.client_verify_chksum(sock)
     #print msg form server
-    msg_from_server = "Message from Server {}".format(recv_msg)
-    print(msg_from_server)
+    print("Message from Server: ", recv_msg)
   
-# class Client:
-#   def __init__(self):
-#     self.client_state = CLOSED
-#     self.handshake()
 
-  #def handshake:
-
-  #def terminate
-
-  #update state(closed, listening)
-  #header with SYN,ACK
-
-  #state
