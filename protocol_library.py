@@ -6,6 +6,7 @@ error_msg = b"invalid_msg"
 server_ACK = 5320
 client_SYN = 4320
 
+#cheksum error checking + retransmission
 def create_json(msg_from_client):
   encoded_msg_from_client = str.encode(msg_from_client)
   chksm = hashlib.sha1(encoded_msg_from_client).hexdigest()
@@ -23,7 +24,7 @@ def client_verify_chksum(sock):
   if msg_from_server[0] == b'invalid_msg':
     return False
   else:
-    return msg_from_server
+    return msg_from_server[0]
 
 def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
   msg_from_client = str.encode(msg_from_client)
@@ -54,7 +55,7 @@ def recv_from_client(sock):
     'chksm': chksm,
     'address': address
   }
-
+#handshake header
 class Header:
   def __init__(self, SYN, ACK):
     self.SYN = SYN
