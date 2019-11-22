@@ -2,7 +2,7 @@ import hashlib, pickle, json
 
 buffer_size = 30000
 error_msg = b"invalid_msg"
-
+server_ACK = 5320
 
 def create_json(msg_from_client):
   encoded_msg_from_client = str.encode(msg_from_client)
@@ -68,3 +68,34 @@ class Header:
     temp = self.ACK
     self.ACK = self.SYN
     self.SYN = temp
+
+#server handshake
+def process_server_header(server_header, client_address):
+  print("Client ", client_address, " connected")
+  server_header = pickle.loads(server_header)
+  server_header = Header(server_header['SYN'], server_ACK)
+  server_header.change_SYN_with_ACK()
+  server_header.increment_ACK()
+  server_header = server_header.get_header_data()
+  server_header = pickle.dumps(server_header)
+  return server_header
+def verify_server_connection(server_header):
+  server_header = pickle.loads(server_header)
+  if server_header['ACK'] == (server_ACK + 1):
+    print("Connection established")
+    return True
+  else:
+    return False
+def establish_connection(sock):
+  while True:
+    server_header, client_address = sock.recvfrom(buffer_size)
+      
+    server_header = process_server_header(server_header, client_address)
+    sock.sendto(server_header, client_address)
+
+    recv_from_client = sock.recvfrom(buffer_size)
+    server_header = recv_from_client[0]
+    
+    verify_connection = verify_server_connection(server_header)
+    if verify_connection:
+      break
