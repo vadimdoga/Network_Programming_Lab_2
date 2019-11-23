@@ -7,6 +7,16 @@ server_ACK = 5320
 client_SYN = 4320
 t_SYN = 2000
 
+#convert
+def json_bytes_dumps(dumping):
+  dumping = json.dumps(dumping)
+  dumping = pickle.dumps(dumping)
+  return dumping
+def json_bytes_loads(loading):
+  loading = pickle.loads(loading)
+  loading = json.loads(loading)
+  return loading
+
 #cheksum error checking + retransmission
 def create_json(msg_from_client):
   encoded_msg_from_client = str.encode(msg_from_client)
@@ -17,8 +27,7 @@ def create_json(msg_from_client):
     'chksm': chksm,
     'type': 'msg_checksum'
   }
-  json_to_send = json.dumps(dict_to_send)
-  json_to_send = pickle.dumps(json_to_send)
+  json_to_send = json_bytes_dumps(dict_to_send)
   return json_to_send
 
 def client_verify_chksum(sock):
@@ -45,9 +54,8 @@ def recv_from_client(sock):
 
   client_address = recv_from_client[1]
   json_from_client = recv_from_client[0]
-  json_from_client = pickle.loads(json_from_client)
-  #convert to dict
-  json_from_client = json.loads(json_from_client)
+
+  json_from_client = json_bytes_loads(json_from_client)
 
   if json_from_client['type'] == 'msg_checksum':
     msg = json_from_client["msg"]
@@ -63,8 +71,7 @@ def recv_from_client(sock):
     t_recv_header.change_SYN_with_ACK()
     t_recv_header.increment_ACK()
     t_recv_header = t_recv_header.get_header_data()
-    t_recv_header = json.dumps(t_recv_header)
-    t_recv_header = pickle.dumps(t_recv_header)
+    t_recv_header = json_bytes_dumps(t_recv_header)
     sock.sendto(t_recv_header, client_address)
     print("Connection terminated")
     return True
@@ -88,15 +95,17 @@ class Header:
 #server handshake
 def process_server_header(server_header, client_address):
   print("Client ", client_address, " connected")
-  server_header = pickle.loads(server_header)
+  server_header = json_bytes_loads(server_header)
   server_header = Header(server_header['SYN'], server_ACK)
   server_header.change_SYN_with_ACK()
   server_header.increment_ACK()
   server_header = server_header.get_header_data()
-  server_header = pickle.dumps(server_header)
+
+  server_header = json_bytes_dumps(server_header)
   return server_header
 def verify_server_connection(server_header):
-  server_header = pickle.loads(server_header)
+  server_header = json_bytes_loads(server_header)
+
   if server_header['ACK'] == (server_ACK + 1):
     print("Connection established")
     return True
@@ -119,19 +128,21 @@ def establish_connection(sock):
 #client handshake
 def initial_client_SYN():
   client_header = Header(client_SYN, None).get_header_data()
-  client_header = pickle.dumps(client_header)
+  client_header = json_bytes_dumps(client_header)
   return client_header
 def process_client_header(client_header):
   client_header = Header(client_header['SYN'], client_header['ACK'])
   client_header.change_SYN_with_ACK()
   client_header.increment_ACK()
   client_header = client_header.get_header_data()
-  client_header = pickle.dumps(client_header)
+
+  client_header = json_bytes_dumps(client_header)
   return client_header
 def verify_client_connection(sock):
   recv_from_server = sock.recvfrom(buffer_size)
   client_header = recv_from_server[0]
-  client_header = pickle.loads(client_header)
+  client_header = json_bytes_loads(client_header)
+
   if client_header['ACK'] == (client_SYN + 1):
     client_header = process_client_header(client_header)
     sock.sendto(client_header, server_address)
@@ -154,12 +165,11 @@ def terminate_connection(sock):
   t_client_header = Header(t_SYN, None)
   t_client_header = t_client_header.get_header_data()
   t_client_header['type'] = 'fin'
-  t_client_header = json.dumps(t_client_header)
-  t_client_header = pickle.dumps(t_client_header)
+
+  t_client_header = json_bytes_dumps(t_client_header)
   sock.sendto(t_client_header, server_address)
 
   t_recv = sock.recvfrom(buffer_size)[0]
-  t_recv = pickle.loads(t_recv)
-  t_recv = json.loads(t_recv)
+  t_recv = json_bytes_loads(t_recv)
   if t_recv['ACK'] == t_SYN + 1:
     print("Connection termianted")

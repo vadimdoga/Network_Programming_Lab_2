@@ -1,5 +1,4 @@
 import socket 
-import pickle, hashlib
 import protocol_library
 
 local_ip = "127.0.0.1"
