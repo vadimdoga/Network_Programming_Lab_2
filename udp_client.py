@@ -15,5 +15,9 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     recv_msg = protocol_library.client_verify_chksum(sock)
     #print msg form server
     print("Message from Server: ", recv_msg)
+
+    protocol_library.terminate_connection(sock)
+
+
   
 

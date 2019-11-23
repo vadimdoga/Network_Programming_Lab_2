@@ -16,12 +16,14 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     
     #recv dict from client
     recv = protocol_library.recv_from_client(sock)
-    #verify the cheksum
-    verify_chksm = protocol_library.server_verify_chksm(sock, msg_from_server, recv['msg'], recv['chksm'], recv['address'])
-      
-    if verify_chksm:
-      print("Message from Client: ", recv['msg'])
+    if recv == True:
       break
+    else:
+      #verify the cheksum
+      verify_chksm = protocol_library.server_verify_chksm(sock, msg_from_server, recv['msg'], recv['chksm'], recv['address'])
+        
+      if verify_chksm:
+        print("Message from Client: ", recv['msg'])
 
 
 

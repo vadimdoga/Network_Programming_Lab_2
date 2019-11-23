@@ -5,6 +5,7 @@ server_address = ("127.0.0.1", 8080)
 error_msg = b"invalid_msg"
 server_ACK = 5320
 client_SYN = 4320
+t_SYN = 2000
 
 #cheksum error checking + retransmission
 def create_json(msg_from_client):
@@ -13,7 +14,8 @@ def create_json(msg_from_client):
 
   dict_to_send = {
     'msg': msg_from_client,
-    'chksm': chksm
+    'chksm': chksm,
+    'type': 'msg_checksum'
   }
   json_to_send = json.dumps(dict_to_send)
   json_to_send = pickle.dumps(json_to_send)
@@ -41,20 +43,31 @@ def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
 def recv_from_client(sock):
   recv_from_client = sock.recvfrom(buffer_size)
 
-  address = recv_from_client[1]
+  client_address = recv_from_client[1]
   json_from_client = recv_from_client[0]
   json_from_client = pickle.loads(json_from_client)
   #convert to dict
   json_from_client = json.loads(json_from_client)
 
-  msg = json_from_client["msg"]
-  chksm = json_from_client['chksm']
+  if json_from_client['type'] == 'msg_checksum':
+    msg = json_from_client["msg"]
+    chksm = json_from_client['chksm']
 
-  return {
-    'msg': msg,
-    'chksm': chksm,
-    'address': address
-  }
+    return {
+      'msg': msg,
+      'chksm': chksm,
+      'address': client_address
+    }
+  elif json_from_client['type'] == 'fin':
+    t_recv_header = Header(json_from_client['SYN'], json_from_client['ACK'])
+    t_recv_header.change_SYN_with_ACK()
+    t_recv_header.increment_ACK()
+    t_recv_header = t_recv_header.get_header_data()
+    t_recv_header = json.dumps(t_recv_header)
+    t_recv_header = pickle.dumps(t_recv_header)
+    sock.sendto(t_recv_header, client_address)
+    print("Connection terminated")
+    return True
 #handshake header
 class Header:
   def __init__(self, SYN, ACK):
@@ -136,3 +149,17 @@ def handshake(sock):
   else:
     print("Connection failed")
     return False
+
+def terminate_connection(sock):
+  t_client_header = Header(t_SYN, None)
+  t_client_header = t_client_header.get_header_data()
+  t_client_header['type'] = 'fin'
+  t_client_header = json.dumps(t_client_header)
+  t_client_header = pickle.dumps(t_client_header)
+  sock.sendto(t_client_header, server_address)
+
+  t_recv = sock.recvfrom(buffer_size)[0]
+  t_recv = pickle.loads(t_recv)
+  t_recv = json.loads(t_recv)
+  if t_recv['ACK'] == t_SYN + 1:
+    print("Connection termianted")
