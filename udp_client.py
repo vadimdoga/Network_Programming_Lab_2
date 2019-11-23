@@ -6,7 +6,7 @@ msg_from_client = "hello from client"
 json_to_send = protocol_library.create_json(msg_from_client, True)
 #udp connection
 with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
-  handshake = protocol_library.handshake(sock)
+  handshake = protocol_library.client_establish_connection(sock)
   if handshake:
     while True:
       if i == 5:
@@ -21,7 +21,7 @@ with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
         #print msg form server
         print("Message from Server: ", recv_msg)
         break
-      i = i +1
+      i = i + 1
     protocol_library.terminate_connection(sock)
 
 
