@@ -18,9 +18,12 @@ def json_bytes_loads(loading):
   return loading
 
 #cheksum error checking + retransmission
-def create_json(msg_from_client):
+def create_json(msg_from_client, bool):
   encoded_msg_from_client = str.encode(msg_from_client)
-  chksm = hashlib.sha1(encoded_msg_from_client).hexdigest()
+  if bool:
+    chksm = hashlib.sha1(b"encoded_msg_from_client").hexdigest()
+  else:
+    chksm = hashlib.sha1(encoded_msg_from_client).hexdigest()
 
   dict_to_send = {
     'msg': msg_from_client,
@@ -33,13 +36,14 @@ def create_json(msg_from_client):
 def client_verify_chksum(sock):
   msg_from_server = sock.recvfrom(buffer_size)
   if msg_from_server[0] == b'invalid_msg':
-    return False
+    #retransmission
+    return "invalid_msg"
   else:
     return msg_from_server[0]
 
 def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
-  msg_from_client = str.encode(msg_from_client)
-  hashed_msg = hashlib.sha1(msg_from_client).hexdigest()
+  hashed_msg = str.encode(msg_from_client)
+  hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
   if chksm != hashed_msg:
     sock.sendto(error_msg, address)
     print("Invalid Message")
@@ -47,6 +51,7 @@ def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
   else:
     sock.sendto(msg_from_server, address)
     print("Valid Message")
+    print("Message from Client: ", msg_from_client)
     return True
 
 def recv_from_client(sock):
@@ -74,7 +79,7 @@ def recv_from_client(sock):
     t_recv_header = json_bytes_dumps(t_recv_header)
     sock.sendto(t_recv_header, client_address)
     print("Connection terminated")
-    return True
+    return 'fin'
 #handshake header
 class Header:
   def __init__(self, SYN, ACK):
@@ -172,4 +177,4 @@ def terminate_connection(sock):
   t_recv = sock.recvfrom(buffer_size)[0]
   t_recv = json_bytes_loads(t_recv)
   if t_recv['ACK'] == t_SYN + 1:
-    print("Connection termianted")
+    print("Connection terminated")
