@@ -9,6 +9,9 @@ SERVER_ADDRESS = library.protocol_library.SERVER_ADDRESS
 CLIENT_SYN = library.protocol_library.CLIENT_SYN
 T_CLIENT_SYN = library.protocol_library.T_CLIENT_SYN
 
+i = 0
+MSG_FROM_CLIENT = "hello from client"
+
 
 #generate a json with msg and it's checksum
 def create_json(msg_from_client, bool):
@@ -28,7 +31,7 @@ def create_json(msg_from_client, bool):
   return json_to_send
 
 #verify server response on validity of checksum
-def client_verify_chksum(sock):
+def verify_chksum(sock):
   msg_from_server = sock.recvfrom(BUFFER_SIZE)
   if msg_from_server[0] == b'invalid_msg':
     #retransmission
@@ -40,12 +43,12 @@ def client_verify_chksum(sock):
 
 #client handshake
 #send client SYN to server side
-def initial_CLIENT_SYN():
+def initial_SYN():
   client_header = library.protocol_header.Header(CLIENT_SYN, None).get_header_data()
   client_header = json_bytes_dumps(client_header)
   return client_header
 #receive server SYN and updated ACK and send client updated client ACK
-def process_client_header(client_header):
+def process_header(client_header):
   client_header = library.protocol_header.Header(client_header['SYN'], client_header['ACK'])
   client_header.change_SYN_with_ACK()
   client_header.increment_ACK()
@@ -54,25 +57,25 @@ def process_client_header(client_header):
   client_header = json_bytes_dumps(client_header)
   return client_header
 #receive from server SYN and ACK and verify ACK
-def verify_client_connection(sock):
+def verify_connection(sock):
   recv_from_server = sock.recvfrom(BUFFER_SIZE)
   client_header = recv_from_server[0]
   client_header = json_bytes_loads(client_header)
 
   #if true, connection established
   if client_header['ACK'] == (CLIENT_SYN + 1):
-    client_header = process_client_header(client_header)
+    client_header = process_header(client_header)
     sock.sendto(client_header, SERVER_ADDRESS)
     return True
   else:
     return False
 #client handshake
-def client_establish_connection(sock):
-  client_header = initial_CLIENT_SYN()
+def establish_connection(sock):
+  client_header = initial_SYN()
   sock.sendto(client_header, SERVER_ADDRESS)
 
-  verify_connection = verify_client_connection(sock)
-  if verify_connection:
+  verify = verify_connection(sock)
+  if verify:
     print("Connection established")
     return True
   else:
@@ -104,4 +107,23 @@ def terminate_connection(sock):
     else:
       print("Error during stopping connection.")
 
-   
+def send_recv_msg(client):
+  global i
+  #create dict with msg and cheksum
+  json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, True)
+  #udp connection
+  if client.handshake:
+    while True:
+      if i == 5:
+        json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, False)
+      #send to server
+      client.sock.sendto(json_to_send, library.protocol_library_client.SERVER_ADDRESS)
+      #based on recv from server, check if data is valid
+      recv_msg = library.protocol_library_client.verify_chksum(client.sock)
+      if recv_msg == "invalid_msg":
+        print("Invalid msg, retransmitting message.")
+      else:
+        #print msg form server
+        print("Message from Server: ", recv_msg)
+        break
+      i = i + 1

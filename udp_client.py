@@ -1,36 +1,18 @@
 import socket
 import library.protocol_library_client
 
-i = 0
-msg_from_client = "hello from client"
-
 class Client:
   def __init__(self):
     # with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.handshake = library.protocol_library_client.client_establish_connection(self.sock)
+    self.handshake = library.protocol_library_client.establish_connection(self.sock)
 
 if __name__ == "__main__":
   client = Client()
-  #create dict with msg and cheksum
-  json_to_send = library.protocol_library_client.create_json(msg_from_client, True)
-  #udp connection
-  if client.handshake:
-    while True:
-      if i == 5:
-        json_to_send = library.protocol_library_client.create_json(msg_from_client, False)
-      #send to server
-      client.sock.sendto(json_to_send, library.protocol_library_client.SERVER_ADDRESS)
-      #based on recv from server check if data is valid
-      recv_msg = library.protocol_library_client.client_verify_chksum(client.sock)
-      if recv_msg == "invalid_msg":
-        print("Invalid msg, retransmitting message.")
-      else:
-        #print msg form server
-        print("Message from Server: ", recv_msg)
-        break
-      i = i + 1
-    library.protocol_library_client.terminate_connection(client.sock)
+  #send json to server and receive it
+  library.protocol_library_client.send_recv_msg(client)
+  #stop connection with server
+  library.protocol_library_client.terminate_connection(client.sock)
 
 
   

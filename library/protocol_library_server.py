@@ -9,9 +9,11 @@ T_SERVER_SYN = library.protocol_library.T_SERVER_SYN
 SERVER_ACK = library.protocol_library.SERVER_ACK
 ERROR_MSG = library.protocol_library.ERROR_MSG
 
+MSG_FROM_SERVER = b"Successful packet transmission"
+
 
 #verify checksum on server side
-def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
+def verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
   #hash msg and verify if it's equal with checksum
   hashed_msg = str.encode(msg_from_client)
   hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
@@ -25,7 +27,7 @@ def server_verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
     print("Valid Message")
     print("Message from Client: ", msg_from_client)
 #receive on server side
-def server_receive(sock):
+def receive_from_client(sock):
   recv_from_client = sock.recvfrom(BUFFER_SIZE)
 
   client_address = recv_from_client[1]
@@ -66,7 +68,7 @@ def server_receive(sock):
 
 #server handshake
 #receive from client SYN. Change SYN with ACK and send update ACK with server SYN
-def process_server_header(server_header, client_address):
+def process_header(server_header, client_address):
   print("Client ", client_address, " connected")
   server_header = json_bytes_loads(server_header)
   #header class
@@ -78,7 +80,7 @@ def process_server_header(server_header, client_address):
   server_header = json_bytes_dumps(server_header)
   return server_header
 #receive updated ACK from client to confirm connection
-def verify_server_connection(server_header):
+def verify_connection(server_header):
   server_header = json_bytes_loads(server_header)
 
   if server_header['ACK'] == (SERVER_ACK + 1):
@@ -86,17 +88,29 @@ def verify_server_connection(server_header):
     return True
   else:
     return False
-def server_establish_connection(sock):
+def establish_connection(sock):
   while True:
     server_header, client_address = sock.recvfrom(BUFFER_SIZE)
     #recv SYN send server SYN and updated ACK
-    server_header = process_server_header(server_header, client_address)
+    server_header = process_header(server_header, client_address)
     sock.sendto(server_header, client_address)
 
     recv_from_client = sock.recvfrom(BUFFER_SIZE)
     server_header = recv_from_client[0]
     #recv updated ACK and based on it decide if connection established
-    verify_connection = verify_server_connection(server_header)
-    if verify_connection:
+    verify = verify_connection(server_header)
+    if verify:
       break
+def wait_from_client(server):
+  while True:
+    #recv dict from client
+    recv = library.protocol_library_server.receive_from_client(server.sock)
+    if recv == 'fin':
+      break
+    else:
+      #verify the cheksum
+      #if chksm not valid retransmit
+      library.protocol_library_server.verify_chksm(server.sock, MSG_FROM_SERVER, recv['msg'], recv['chksm'], recv['address'])
+        
+
 
