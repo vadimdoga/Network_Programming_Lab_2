@@ -29,11 +29,11 @@ def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
 #receive on server side
 def receive_from_client(sock):
   recv_from_client = sock.recvfrom(BUFFER_SIZE)
-
   client_address = recv_from_client[1]
 
   json_from_client = recv_from_client[0]
   json_from_client = json_bytes_loads(json_from_client)
+  print(json_from_client)
   #decrypt json
 
   #if type is msg_checksum then server receives a dict with msg,chksm,address
@@ -70,13 +70,14 @@ def receive_from_client(sock):
 
 #server handshake
 #receive from client SYN. Change SYN with ACK and send update ACK with server SYN
-def process_header(server_header, client_address):
+def process_header(server_header, client_address, RSA_PUBLIC_KEY):
   print("Client ", client_address, " connected")
   server_header = json_bytes_loads(server_header)
   #header class
   server_header = library.protocol_header.Header(server_header['SYN'], SERVER_ACK)
   server_header.change_SYN_with_ACK()
   server_header.increment_ACK()
+  server_header.add_rsa_public_key(RSA_PUBLIC_KEY)
   server_header = server_header.get_header_data()
 
   server_header = json_bytes_dumps(server_header)
@@ -90,11 +91,11 @@ def verify_connection(server_header):
     return True
   else:
     return False
-def establish_connection(sock):
+def establish_connection(sock, RSA_PUBLIC_KEY):
   while True:
     server_header, client_address = sock.recvfrom(BUFFER_SIZE)
     #recv SYN send server SYN and updated ACK
-    server_header = process_header(server_header, client_address)
+    server_header = process_header(server_header, client_address, RSA_PUBLIC_KEY)
     sock.sendto(server_header, client_address)
 
     recv_from_client = sock.recvfrom(BUFFER_SIZE)
@@ -103,6 +104,8 @@ def establish_connection(sock):
     verify = verify_connection(server_header)
     if verify:
       break
+
+    
 def wait_from_client(server):
   while True:
     #recv dict from client

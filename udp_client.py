@@ -1,11 +1,14 @@
 import socket
 import library.protocol_library_client
+from library.protocol_library_crypto import generate_AES_key
 
 class Client:
   def __init__(self):
+    #generate aes key
+    self.AES_KEY = generate_AES_key()
     # with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sock:
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-    self.handshake = library.protocol_library_client.establish_connection(self.sock)
+    self.handshake = library.protocol_library_client.establish_connection(self.sock, self.AES_KEY)
 
 if __name__ == "__main__":
   client = Client()

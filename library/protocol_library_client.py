@@ -1,5 +1,6 @@
 import hashlib
 import library.protocol_library, library.protocol_header
+from library.protocol_library_crypto import encrypt_json
 
 json_bytes_dumps = library.protocol_library.json_bytes_dumps
 json_bytes_loads = library.protocol_library.json_bytes_loads
@@ -11,6 +12,8 @@ T_CLIENT_SYN = library.protocol_library.T_CLIENT_SYN
 
 i = 0
 MSG_FROM_CLIENT = "hello from client"
+RSA_PUBLIC_KEY = b''
+AES_KEY = b''
 
 
 #generate a json with msg and it's checksum
@@ -27,9 +30,10 @@ def create_json(msg_from_client, bool):
     'chksm': chksm,
     'type': 'msg_checksum'
   }
-
-  json_to_send = json_bytes_dumps(dict_to_send)
   #encrypt json
+  enc_json = encrypt_json(msg_from_client, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
+  print(enc_json)
+  json_to_send = json_bytes_dumps(dict_to_send)
 
   return json_to_send
 
@@ -42,7 +46,27 @@ def verify_chksum(sock):
   else:
     #send msg from server
     return msg_from_server[0]
-
+#send json to server and verify chksm
+def send_recv_msg(client):
+  global i
+  #create dict with msg and cheksum
+  json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, True)
+  #udp connection
+  if client.handshake:
+    while True:
+      if i == 5:
+        json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, False)
+      #send to server
+      client.sock.sendto(json_to_send, library.protocol_library_client.SERVER_ADDRESS)
+      #based on recv from server, check if data is valid
+      recv_msg = library.protocol_library_client.verify_chksum(client.sock)
+      if recv_msg == "invalid_msg":
+        print("Invalid msg, retransmitting message.")
+      else:
+        #print msg form server
+        print("Message from Server: ", recv_msg)
+        break
+      i = i + 1
 
 #client handshake
 #send client SYN to server side
@@ -61,10 +85,15 @@ def process_header(client_header):
   return client_header
 #receive from server SYN and ACK and verify ACK
 def verify_connection(sock):
+  global RSA_PUBLIC_KEY
   recv_from_server = sock.recvfrom(BUFFER_SIZE)
   client_header = recv_from_server[0]
   client_header = json_bytes_loads(client_header)
-
+  #get public key
+  if 'RSA_PUBLIC_KEY' in client_header:
+    RSA_PUBLIC_KEY = client_header['RSA_PUBLIC_KEY']
+    RSA_PUBLIC_KEY = str.encode(RSA_PUBLIC_KEY)
+    print("RSA Public Key successful loaded from server")
   #if true, connection established
   if client_header['ACK'] == (CLIENT_SYN + 1):
     client_header = process_header(client_header)
@@ -73,7 +102,10 @@ def verify_connection(sock):
   else:
     return False
 #client handshake
-def establish_connection(sock):
+def establish_connection(sock, key):
+  global AES_KEY
+  AES_KEY = key
+
   client_header = initial_SYN()
   sock.sendto(client_header, SERVER_ADDRESS)
 
@@ -110,23 +142,4 @@ def terminate_connection(sock):
     else:
       print("Error during stopping connection.")
 
-def send_recv_msg(client):
-  global i
-  #create dict with msg and cheksum
-  json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, True)
-  #udp connection
-  if client.handshake:
-    while True:
-      if i == 5:
-        json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, False)
-      #send to server
-      client.sock.sendto(json_to_send, library.protocol_library_client.SERVER_ADDRESS)
-      #based on recv from server, check if data is valid
-      recv_msg = library.protocol_library_client.verify_chksum(client.sock)
-      if recv_msg == "invalid_msg":
-        print("Invalid msg, retransmitting message.")
-      else:
-        #print msg form server
-        print("Message from Server: ", recv_msg)
-        break
-      i = i + 1
+
