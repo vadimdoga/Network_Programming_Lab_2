@@ -27,7 +27,10 @@ def create_json(msg_from_client, bool):
     'chksm': chksm,
     'type': 'msg_checksum'
   }
+
   json_to_send = json_bytes_dumps(dict_to_send)
+  #encrypt json
+
   return json_to_send
 
 #verify server response on validity of checksum

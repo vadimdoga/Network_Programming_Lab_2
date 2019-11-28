@@ -13,9 +13,9 @@ MSG_FROM_SERVER = b"Successful packet transmission"
 
 
 #verify checksum on server side
-def verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
+def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
   #hash msg and verify if it's equal with checksum
-  hashed_msg = str.encode(msg_from_client)
+  hashed_msg = str.encode(MSG_FROM_CLIENT)
   hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
   if chksm != hashed_msg:
     #if not valid send to client error msg
@@ -23,17 +23,19 @@ def verify_chksm(sock, msg_from_server, msg_from_client, chksm, address):
     print("Invalid Message, waiting for retransmission.")
   else:
     #if valid send to client msg from server
-    sock.sendto(msg_from_server, address)
+    sock.sendto(MSG_FROM_SERVER, address)
     print("Valid Message")
-    print("Message from Client: ", msg_from_client)
+    print("Message from Client: ", MSG_FROM_CLIENT)
 #receive on server side
 def receive_from_client(sock):
   recv_from_client = sock.recvfrom(BUFFER_SIZE)
 
   client_address = recv_from_client[1]
-  json_from_client = recv_from_client[0]
 
+  json_from_client = recv_from_client[0]
   json_from_client = json_bytes_loads(json_from_client)
+  #decrypt json
+
   #if type is msg_checksum then server receives a dict with msg,chksm,address
   if json_from_client['type'] == 'msg_checksum':
     msg = json_from_client["msg"]
@@ -110,7 +112,7 @@ def wait_from_client(server):
     else:
       #verify the cheksum
       #if chksm not valid retransmit
-      library.protocol_library_server.verify_chksm(server.sock, MSG_FROM_SERVER, recv['msg'], recv['chksm'], recv['address'])
+      library.protocol_library_server.verify_chksm(server.sock, recv['msg'], recv['chksm'], recv['address'])
         
 
 
