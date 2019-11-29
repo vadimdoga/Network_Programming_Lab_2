@@ -1,16 +1,11 @@
-import hashlib
-import library.protocol_library, library.protocol_header
+from library.protocol_header import Header
 from library.protocol_library_crypto import decrypt_json
-from library.protocol_library import json_el_to_byte
+from library.protocol_library import convert_json_el_to_byte, json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
+import hashlib
 
-json_bytes_dumps = library.protocol_library.json_bytes_dumps
-json_bytes_loads = library.protocol_library.json_bytes_loads
-
-BUFFER_SIZE = library.protocol_library.BUFFER_SIZE
-T_SERVER_SYN = library.protocol_library.T_SERVER_SYN
-SERVER_ACK = library.protocol_library.SERVER_ACK
-ERROR_MSG = library.protocol_library.ERROR_MSG
-
+ERROR_MSG = b"invalid_msg"
+SERVER_ACK = 5320
+T_SERVER_SYN = 3000
 MSG_FROM_SERVER = b"Successful packet transmission"
 RSA_PUBLIC_KEY = b""
 RSA_PRIVATE_KEY = b""
@@ -42,10 +37,10 @@ def receive_from_client(sock):
   #if type is msg_checksum then server receives a dict with msg,chksm,address
   if json_from_client['type'] == 'msg_checksum':
     #convert json el from str to byte
-    json_from_client = json_el_to_byte(json_from_client)
+    json_from_client = convert_json_el_to_byte(json_from_client)
     #decrypt json
     json_from_client = decrypt_json(json_from_client, RSA_PRIVATE_KEY)
-    
+
     msg = json_from_client["msg"]
     chksm = json_from_client['chksm']
 
@@ -59,7 +54,7 @@ def receive_from_client(sock):
     while True:
       t_recv = json_from_client
       #receives SYN from client and send updated ACK to client for it to stop
-      t_send_header = library.protocol_header.Header(t_recv['SYN'], T_SERVER_SYN)
+      t_send_header = Header(t_recv['SYN'], T_SERVER_SYN)
       t_send_header.change_SYN_with_ACK()
       t_send_header.increment_ACK()
       t_send_header = t_send_header.get_header_data()
@@ -83,7 +78,7 @@ def process_header(server_header, client_address):
   print("Client ", client_address, " connected")
   server_header = json_bytes_loads(server_header)
   #header class
-  server_header = library.protocol_header.Header(server_header['SYN'], SERVER_ACK)
+  server_header = Header(server_header['SYN'], SERVER_ACK)
   server_header.change_SYN_with_ACK()
   server_header.increment_ACK()
   server_header.add_rsa_public_key(RSA_PUBLIC_KEY)
@@ -122,13 +117,13 @@ def establish_connection(sock, PUBLIC_KEY, PRIVATE_KEY):
 def wait_from_client(server):
   while True:
     #recv dict from client
-    recv = library.protocol_library_server.receive_from_client(server.sock)
+    recv = receive_from_client(server.sock)
     if recv == 'fin':
       break
     else:
       #verify the cheksum
       #if chksm not valid retransmit
-      library.protocol_library_server.verify_chksm(server.sock, recv['msg'], recv['chksm'], recv['address'])
+      verify_chksm(server.sock, recv['msg'], recv['chksm'], recv['address'])
         
 
 

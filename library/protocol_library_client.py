@@ -1,20 +1,16 @@
-import hashlib
-import library.protocol_library, library.protocol_header
+from library.protocol_header import Header
 from library.protocol_library_crypto import encrypt_json
-
-json_bytes_dumps = library.protocol_library.json_bytes_dumps
-json_bytes_loads = library.protocol_library.json_bytes_loads
-
-BUFFER_SIZE = library.protocol_library.BUFFER_SIZE
-SERVER_ADDRESS = library.protocol_library.SERVER_ADDRESS
-CLIENT_SYN = library.protocol_library.CLIENT_SYN
-T_CLIENT_SYN = library.protocol_library.T_CLIENT_SYN
+from library.protocol_library import json_bytes_dumps, json_bytes_loads, convert_json_el_to_str
+from library.protocol_library import BUFFER_SIZE
+import hashlib
 
 i = 0
+SERVER_ADDRESS = ("127.0.0.1", 8080)
 MSG_FROM_CLIENT = "hello from client"
+T_CLIENT_SYN = 2000
+CLIENT_SYN = 4320
 RSA_PUBLIC_KEY = b''
 AES_KEY = b''
-
 
 #generate a json with msg and it's checksum
 def create_json(msg_from_client, bool):
@@ -27,6 +23,9 @@ def create_json(msg_from_client, bool):
   #return dict with msg, checksum and type that cand be msg_checksum either fin(terminate connection)
   #encrypt json
   json_to_send = encrypt_json(msg_from_client, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
+  #convert json el from bytes to str
+  json_to_send = convert_json_el_to_str(json_to_send)
+  #convert to json and bytes
   json_to_send = json_bytes_dumps(json_to_send)
 
   return json_to_send
@@ -44,16 +43,16 @@ def verify_chksum(sock):
 def send_recv_msg(client):
   global i
   #create dict with msg and cheksum
-  json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, True)
+  json_to_send = create_json(MSG_FROM_CLIENT, True)
   #udp connection
   if client.handshake:
     while True:
       if i == 5:
-        json_to_send = library.protocol_library_client.create_json(MSG_FROM_CLIENT, False)
+        json_to_send = create_json(MSG_FROM_CLIENT, False)
       #send to server
-      client.sock.sendto(json_to_send, library.protocol_library_client.SERVER_ADDRESS)
+      client.sock.sendto(json_to_send, SERVER_ADDRESS)
       #based on recv from server, check if data is valid
-      recv_msg = library.protocol_library_client.verify_chksum(client.sock)
+      recv_msg = verify_chksum(client.sock)
       if recv_msg == "invalid_msg":
         print("Invalid msg, retransmitting message.")
       else:
@@ -65,12 +64,12 @@ def send_recv_msg(client):
 #client handshake
 #send client SYN to server side
 def initial_SYN():
-  client_header = library.protocol_header.Header(CLIENT_SYN, None).get_header_data()
+  client_header = Header(CLIENT_SYN, None).get_header_data()
   client_header = json_bytes_dumps(client_header)
   return client_header
 #receive server SYN and updated ACK and send client updated client ACK
 def process_header(client_header):
-  client_header = library.protocol_header.Header(client_header['SYN'], client_header['ACK'])
+  client_header = Header(client_header['SYN'], client_header['ACK'])
   client_header.change_SYN_with_ACK()
   client_header.increment_ACK()
   client_header = client_header.get_header_data()
@@ -114,7 +113,7 @@ def establish_connection(sock, key):
 def terminate_connection(sock):
   while True:
     #send a json with type fin
-    t_client_header = library.protocol_header.Header(T_CLIENT_SYN, None)
+    t_client_header = Header(T_CLIENT_SYN, None)
     t_client_header = t_client_header.get_header_data()
     t_client_header['type'] = 'fin'
 
@@ -125,7 +124,7 @@ def terminate_connection(sock):
     t_recv = json_bytes_loads(t_recv)
     
     if t_recv['ACK'] == T_CLIENT_SYN + 1:
-      t_client_header = library.protocol_header.Header(t_recv['SYN'], t_recv['ACK'])
+      t_client_header = Header(t_recv['SYN'], t_recv['ACK'])
       t_client_header.change_SYN_with_ACK()
       t_client_header.increment_ACK()
       t_client_header = t_client_header.get_header_data()
