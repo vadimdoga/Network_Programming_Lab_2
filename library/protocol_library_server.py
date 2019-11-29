@@ -12,7 +12,6 @@ RSA_PRIVATE_KEY = b""
 
 #verify checksum on server side
 def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
-  print(MSG_FROM_CLIENT)
   #hash msg and verify if it's equal with checksum
   hashed_msg = str.encode(MSG_FROM_CLIENT)
   hashed_msg = hashlib.sha1(hashed_msg).hexdigest()

@@ -6,7 +6,7 @@ import json, base64
 #generate aes key
 def generate_AES_key():
   AES_KEY = get_random_bytes(16)
-
+  print("AES_KEY Generated")
   return AES_KEY
 
 #generate public & private key used in init
@@ -15,11 +15,12 @@ def generate_RSA_keys():
 
   PRIVATE_KEY = keys.export_key().decode()
   PUBLIC_KEY = keys.publickey().export_key().decode()
-
+  print("RSA_KEYS Generated")
   return PUBLIC_KEY, PRIVATE_KEY
 
 #encrypt json with RSA and AES
 def encrypt_json(data, chksm, type, PUBLIC_KEY, AES_KEY):
+  print("ENCRYPTING MSG & AES_KEY")
   print("Message length: ", len(data))
   print("AES Key length: ", len(AES_KEY))
 

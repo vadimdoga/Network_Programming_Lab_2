@@ -6,7 +6,7 @@ import hashlib
 
 i = 0
 SERVER_ADDRESS = ("127.0.0.1", 8080)
-MSG_FROM_CLIENT = "hello from client"
+MSG_FROM_CLIENT = "sdasdjadfkasdashdjasdJASDNoajshfASJDsdoADSoajsdOADHOahdoihwdoaehfjkasdkjashdkjashdkjahdkjhaskdjhkasjhdkajsdkjaskjdaskjdhkajshdkajsdhkjashdkahakjsdhkassa,dnbaskdbkhaskhasdkasbdkasdkjasaksdakjshdaksdbhaksbdkhasbdkasbdjaknx,makjeqjwehiqwehiqehw"
 T_CLIENT_SYN = 2000
 CLIENT_SYN = 4320
 RSA_PUBLIC_KEY = b''
@@ -17,9 +17,9 @@ def create_json(msg_from_client, bool):
   encoded_msg_from_client = str.encode(msg_from_client)
   #false cheksum and true checksum
   if bool:
-    chksm = hashlib.sha1(b"encoded_msg_from_client").hexdigest()
-  else:
     chksm = hashlib.sha1(encoded_msg_from_client).hexdigest()
+  else:
+    chksm = hashlib.sha1(b"encoded_msg_from_client").hexdigest()
   #return dict with msg, checksum and type that cand be msg_checksum either fin(terminate connection)
   #encrypt json
   json_to_send = encrypt_json(msg_from_client, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
@@ -39,16 +39,17 @@ def verify_chksum(sock):
   else:
     #send msg from server
     return msg_from_server[0]
+
 #send json to server and verify chksm
 def send_recv_msg(client):
   global i
   #create dict with msg and cheksum
-  json_to_send = create_json(MSG_FROM_CLIENT, True)
+  json_to_send = create_json(MSG_FROM_CLIENT, False)
   #udp connection
   if client.handshake:
     while True:
       if i == 5:
-        json_to_send = create_json(MSG_FROM_CLIENT, False)
+        json_to_send = create_json(MSG_FROM_CLIENT, True)
       #send to server
       client.sock.sendto(json_to_send, SERVER_ADDRESS)
       #based on recv from server, check if data is valid
@@ -57,6 +58,7 @@ def send_recv_msg(client):
         print("Invalid msg, retransmitting message.")
       else:
         #print msg form server
+        print("Valid msg.")
         print("Message from Server: ", recv_msg)
         break
       i = i + 1
