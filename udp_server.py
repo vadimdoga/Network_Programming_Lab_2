@@ -13,10 +13,10 @@ class Server:
     self.sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     self.sock.bind((local_ip, local_port))
     #generate rsa keys
-    self.RSA_PUBLIC_KEY, RSA_PRIVATE_KEY = generate_RSA_keys()
+    self.RSA_PUBLIC_KEY, self.RSA_PRIVATE_KEY = generate_RSA_keys()
     print("UDP server up and listening.")
     #handshake
-    library.protocol_library_server.establish_connection(self.sock, self.RSA_PUBLIC_KEY)
+    library.protocol_library_server.establish_connection(self.sock, self.RSA_PUBLIC_KEY, self.RSA_PRIVATE_KEY)
 
   
 if __name__ == "__main__":

@@ -1,5 +1,7 @@
 import hashlib
 import library.protocol_library, library.protocol_header
+from library.protocol_library_crypto import decrypt_json
+from library.protocol_library import json_el_to_byte
 
 json_bytes_dumps = library.protocol_library.json_bytes_dumps
 json_bytes_loads = library.protocol_library.json_bytes_loads
@@ -10,10 +12,12 @@ SERVER_ACK = library.protocol_library.SERVER_ACK
 ERROR_MSG = library.protocol_library.ERROR_MSG
 
 MSG_FROM_SERVER = b"Successful packet transmission"
-
+RSA_PUBLIC_KEY = b""
+RSA_PRIVATE_KEY = b""
 
 #verify checksum on server side
 def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
+  print(MSG_FROM_CLIENT)
   #hash msg and verify if it's equal with checksum
   hashed_msg = str.encode(MSG_FROM_CLIENT)
   hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
@@ -28,16 +32,20 @@ def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
     print("Message from Client: ", MSG_FROM_CLIENT)
 #receive on server side
 def receive_from_client(sock):
+  global RSA_PRIVATE_KEY
   recv_from_client = sock.recvfrom(BUFFER_SIZE)
   client_address = recv_from_client[1]
 
   json_from_client = recv_from_client[0]
   json_from_client = json_bytes_loads(json_from_client)
-  print(json_from_client)
-  #decrypt json
-
+  
   #if type is msg_checksum then server receives a dict with msg,chksm,address
   if json_from_client['type'] == 'msg_checksum':
+    #convert json el from str to byte
+    json_from_client = json_el_to_byte(json_from_client)
+    #decrypt json
+    json_from_client = decrypt_json(json_from_client, RSA_PRIVATE_KEY)
+    
     msg = json_from_client["msg"]
     chksm = json_from_client['chksm']
 
@@ -70,7 +78,8 @@ def receive_from_client(sock):
 
 #server handshake
 #receive from client SYN. Change SYN with ACK and send update ACK with server SYN
-def process_header(server_header, client_address, RSA_PUBLIC_KEY):
+def process_header(server_header, client_address):
+  global RSA_PUBLIC_KEY
   print("Client ", client_address, " connected")
   server_header = json_bytes_loads(server_header)
   #header class
@@ -91,11 +100,15 @@ def verify_connection(server_header):
     return True
   else:
     return False
-def establish_connection(sock, RSA_PUBLIC_KEY):
+def establish_connection(sock, PUBLIC_KEY, PRIVATE_KEY):
+  global RSA_PUBLIC_KEY
+  global RSA_PRIVATE_KEY
+  RSA_PUBLIC_KEY = PUBLIC_KEY
+  RSA_PRIVATE_KEY = PRIVATE_KEY
   while True:
     server_header, client_address = sock.recvfrom(BUFFER_SIZE)
     #recv SYN send server SYN and updated ACK
-    server_header = process_header(server_header, client_address, RSA_PUBLIC_KEY)
+    server_header = process_header(server_header, client_address)
     sock.sendto(server_header, client_address)
 
     recv_from_client = sock.recvfrom(BUFFER_SIZE)

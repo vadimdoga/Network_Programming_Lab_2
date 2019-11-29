@@ -25,15 +25,9 @@ def create_json(msg_from_client, bool):
   else:
     chksm = hashlib.sha1(encoded_msg_from_client).hexdigest()
   #return dict with msg, checksum and type that cand be msg_checksum either fin(terminate connection)
-  dict_to_send = {
-    'msg': msg_from_client,
-    'chksm': chksm,
-    'type': 'msg_checksum'
-  }
   #encrypt json
-  enc_json = encrypt_json(msg_from_client, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
-  print(enc_json)
-  json_to_send = json_bytes_dumps(dict_to_send)
+  json_to_send = encrypt_json(msg_from_client, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
+  json_to_send = json_bytes_dumps(json_to_send)
 
   return json_to_send
 
