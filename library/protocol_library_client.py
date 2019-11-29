@@ -6,7 +6,8 @@ import hashlib
 
 i = 0
 SERVER_ADDRESS = ("127.0.0.1", 8080)
-MSG_FROM_CLIENT = "sdasdjadfkasdashdjasdJASDNoajshfASJDsdoADSoajsdOADHOahdoihwdoaehfjkasdkjashdkjashdkjahdkjhaskdjhkasjhdkajsdkjaskjdaskjdhkajshdkajsdhkjashdkahakjsdhkassa,dnbaskdbkhaskhasdkasbdkasdkjasaksdakjshdaksdbhaksbdkhasbdkasbdjaknx,makjeqjwehiqwehiqehw"
+# MSG_FROM_CLIENT = "sdasdjadfkasdashdjasdJASDNosajshfASJDsdoADSoajsdOADHOahdoihwdoaehfjkasdkjashdkjashdkjahdkjhaskdjhkasjhdkajsdkjaskjdaskjdhkajshdkajsdhkjashdkahakjsdhkassa,dnbaskdbkhaskhasdkassdadasdadaadasasaasdasdasmasdasdasdaasdas"
+MSG_FROM_CLIENT = "hello from client"
 T_CLIENT_SYN = 2000
 CLIENT_SYN = 4320
 RSA_PUBLIC_KEY = b''

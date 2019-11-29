@@ -6,7 +6,7 @@ import hashlib
 ERROR_MSG = b"invalid_msg"
 SERVER_ACK = 5320
 T_SERVER_SYN = 3000
-MSG_FROM_SERVER = b"Successful packet transmission"
+MSG_FROM_SERVER = b"Successful message transmission"
 RSA_PUBLIC_KEY = b""
 RSA_PRIVATE_KEY = b""
 

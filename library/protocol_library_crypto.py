@@ -3,9 +3,12 @@ from Crypto.Random import get_random_bytes
 from Crypto.Cipher import AES, PKCS1_OAEP
 from Crypto.PublicKey import RSA
 import json, base64
+
+MAX_RSA_LENGTH = 214
+
 #generate aes key
 def generate_AES_key():
-  AES_KEY = get_random_bytes(16)
+  AES_KEY = get_random_bytes(32)
   print("AES_KEY Generated")
   return AES_KEY
 
@@ -19,22 +22,36 @@ def generate_RSA_keys():
   return PUBLIC_KEY, PRIVATE_KEY
 
 #encrypt json with RSA and AES
-def encrypt_json(data, chksm, type, PUBLIC_KEY, AES_KEY):
-  print("ENCRYPTING MSG & AES_KEY")
-  print("Message length: ", len(data))
+def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
+  print("Message length: ", len(msg))
   print("AES Key length: ", len(AES_KEY))
+  len_msg = len(msg)
 
-  data = data.encode('utf-8')
+  msg = msg.encode('utf-8')
   PUBLIC_KEY = RSA.import_key(PUBLIC_KEY)
 
-  #encrypt aes key with public rsa key
+  #generate aes and rsa ciphers
   cipher_rsa = PKCS1_OAEP.new(PUBLIC_KEY)
-  enc_aes_key = cipher_rsa.encrypt(AES_KEY)
-  #encrypt data with aes 
   cipher_aes = AES.new(AES_KEY, AES.MODE_EAX)
-  ciphertext, tag = cipher_aes.encrypt_and_digest(data)
-  nonce = cipher_aes.nonce
 
+  if len(msg) > MAX_RSA_LENGTH:
+    print("MSG LENGTH TO LARGE. ENCRYPTING ONLY AES_KEY WITH RSA")
+    #encrypt aes key with public rsa key
+    enc_aes_key = cipher_rsa.encrypt(AES_KEY)
+    #encrypt msg with aes 
+    ciphertext, tag = cipher_aes.encrypt_and_digest(msg)
+    nonce = cipher_aes.nonce
+    
+  else:
+    print("ENCRYPTING MSG & AES_KEY WITH RSA")
+    #encrypt aes key with public rsa key
+    enc_aes_key = cipher_rsa.encrypt(AES_KEY)
+    #encrypt msg with aes and rsa
+    ciphertext, tag = cipher_aes.encrypt_and_digest(msg)
+    enc_ciphertext = cipher_rsa.encrypt(ciphertext)
+    ciphertext = enc_ciphertext
+    nonce = cipher_aes.nonce
+    
   return {
     'msg': {
       'enc_aes_key': enc_aes_key,
@@ -43,25 +60,40 @@ def encrypt_json(data, chksm, type, PUBLIC_KEY, AES_KEY):
       'ciphertext': ciphertext
     },
     'chksm': chksm,
-    'type': 'msg_checksum'
+    'type': 'msg_checksum',
+    'len_msg': len_msg
   }
 
 #decrypt json with RSA and AES
 def decrypt_json(encrypted_json, PRIVATE_KEY):
-  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type = extract_data_from_json(encrypted_json)
-  
-  #decrypt aes_key with rsa pv key
+  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg = extract_data_from_json(encrypted_json)
+  #assign
+  enc_ciphertext = ciphertext
   PRIVATE_KEY = RSA.import_key(PRIVATE_KEY)
 
+  #generate rsa cipher
   cipher_rsa = PKCS1_OAEP.new(PRIVATE_KEY)
-  aes_key = cipher_rsa.decrypt(enc_aes_key)
-  #decrypt data with aes
-  cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce)
-  data = cipher_aes.decrypt_and_verify(ciphertext, tag)
-  data = data.decode("utf-8")
 
+  #decrypt aes_key with rsa pv key
+  aes_key = cipher_rsa.decrypt(enc_aes_key)
+
+  #generate aes cipher
+  cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce)
+
+  if len_msg > MAX_RSA_LENGTH:
+    print("DECRYPTING ONLY AES_KEY WITH RSA")
+    #decrypt msg with aes
+    msg = cipher_aes.decrypt_and_verify(ciphertext, tag)
+  else:
+    print("DECRYPTING MSG & AES_KEY WITH RSA")
+    #decrypt msg with rsa
+    ciphertext = cipher_rsa.decrypt(enc_ciphertext)
+    #decrypt msg with aes
+    msg = cipher_aes.decrypt_and_verify(ciphertext, tag)
+
+  msg = msg.decode("utf-8")
   return {
-    'msg': data,
+    'msg': msg,
     'chksm': chksm,
     'type': msg_type
   }
