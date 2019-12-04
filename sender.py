@@ -1,7 +1,7 @@
-from library.protocol_library_client import establish_connection, send_recv_msg, terminate_connection, socket_init
+from library.protocol_library_sender import establish_connection, send_recv_msg, terminate_connection, socket_init
 from library.protocol_library_crypto import generate_AES_key
 
-class Client:
+class Sender:
   def __init__(self):
     #initiate socket
     self.sock = socket_init()
@@ -11,11 +11,11 @@ class Client:
     self.handshake = establish_connection(self.sock, self.AES_KEY)
 
 if __name__ == "__main__":
-  client = Client()
+  sender = Sender()
   #send json to server and receive it
-  send_recv_msg(client)
+  send_recv_msg(sender)
   #stop connection with server
-  terminate_connection(client.sock)
+  terminate_connection(sender.sock)
 
 
   
