@@ -1,2 +1,4 @@
 /library/__pycache__
 .vscode
+/library/sender/__pycache__
+/library/receiver/__pycache__
