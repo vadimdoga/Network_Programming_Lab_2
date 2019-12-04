@@ -1,5 +1,6 @@
-from library.protocol_library_receiver import establish_connection, recv_from_sender_and_verify, socket_init
-from library.protocol_library_crypto import generate_RSA_keys
+from library.receiver.protocol_receiver import recv_from_sender_and_verify, socket_init
+from library.receiver.protocol_receiver_header import establish_connection
+from library.protocol_crypto import generate_RSA_keys
 
 class Receiver:
   def __init__(self):

@@ -1,5 +1,9 @@
-from library.protocol_library_sender import establish_connection, send_recv_msg, terminate_connection, socket_init
-from library.protocol_library_crypto import generate_AES_key
+from library.sender.protocol_sender import send_recv_msg, terminate_connection, socket_init
+from library.sender.protocol_sender_header import establish_connection
+from library.protocol_crypto import generate_AES_key
+
+MSG_FROM_SENDER = "hello from sender"
+# MSG_FROM_SENDER = "sdasdjadfkasdashdjasdJASDNosajshfASJDsdoADSoajsdOADHOahdoihwdoaehfjkasdkjashdkjashdkjahdkjhaskdjhkasjhdkajsdkjaskjdaskjdhkajshdkajsdhkjashdkahakjsdhkassa,dnbaskdbkhaskhasdkassdadasdadaadasasaasdasdasmasdasdasdaasdas"
 
 class Sender:
   def __init__(self):
@@ -13,7 +17,7 @@ class Sender:
 if __name__ == "__main__":
   sender = Sender()
   #send json to server and receive it
-  send_recv_msg(sender)
+  send_recv_msg(sender, MSG_FROM_SENDER)
   #stop connection with server
   terminate_connection(sender.sock)
 

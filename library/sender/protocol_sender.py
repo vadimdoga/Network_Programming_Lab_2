@@ -1,22 +1,27 @@
 from library.protocol_header import Header
-from library.protocol_library_crypto import encrypt_json
-from library.protocol_library import json_bytes_dumps, json_bytes_loads, convert_json_el_to_str
-from library.protocol_library import BUFFER_SIZE
+from library.protocol_crypto import encrypt_json
+from library.protocol_general import json_bytes_dumps, json_bytes_loads, convert_json_el_to_str, BUFFER_SIZE
 import hashlib, socket
 
 i = 0
 RECEIVER_ADDRESS = ("127.0.0.1", 8080)
-# MSG_FROM_SENDER = "sdasdjadfkasdashdjasdJASDNosajshfASJDsdoADSoajsdOADHOahdoihwdoaehfjkasdkjashdkjashdkjahdkjhaskdjhkasjhdkajsdkjaskjdaskjdhkajshdkajsdhkjashdkahakjsdhkassa,dnbaskdbkhaskhasdkassdadasdadaadasasaasdasdasmasdasdasdaasdas"
-MSG_FROM_SENDER = "hello from sender"
 T_SENDER_SYN = 2000
-SENDER_SYN = 4320
-RSA_PUBLIC_KEY = b''
 AES_KEY = b''
+RSA_PUBLIC_KEY = b''
 
 #init socket
 def socket_init():
   sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
   return sock
+
+#get rsa public key
+def get_RSA_PUBLIC_KEY(key):
+  global RSA_PUBLIC_KEY
+  RSA_PUBLIC_KEY = key
+#get aes key
+def get_AES_KEY(key):
+  global AES_KEY
+  AES_KEY = key
   
 #generate a json with msg and it's checksum
 def create_json(msg_from_sender, bool):
@@ -47,7 +52,7 @@ def verify_chksum(sock):
     return msg_from_receiver[0]
 
 #send json to receiver and verify chksm
-def send_recv_msg(sender):
+def send_recv_msg(sender, MSG_FROM_SENDER):
   global i
   #create dict with msg and cheksum
   json_to_send = create_json(MSG_FROM_SENDER, False)
@@ -69,53 +74,6 @@ def send_recv_msg(sender):
         break
       i = i + 1
 
-#sender handshake
-#send sender SYN to receiver side
-def initial_SYN():
-  sender_header = Header(SENDER_SYN, None).get_header_data()
-  sender_header = json_bytes_dumps(sender_header)
-  return sender_header
-#receive receiver SYN and updated ACK and send sender updated sender ACK
-def process_header(sender_header):
-  sender_header = Header(sender_header['SYN'], sender_header['ACK'])
-  sender_header.change_SYN_with_ACK()
-  sender_header.increment_ACK()
-  sender_header = sender_header.get_header_data()
-
-  sender_header = json_bytes_dumps(sender_header)
-  return sender_header
-#receive from receiver SYN and ACK and verify ACK
-def verify_connection(sock):
-  global RSA_PUBLIC_KEY
-  recv_from_receiver = sock.recvfrom(BUFFER_SIZE)
-  sender_header = recv_from_receiver[0]
-  sender_header = json_bytes_loads(sender_header)
-  #get public key
-  if 'RSA_PUBLIC_KEY' in sender_header:
-    RSA_PUBLIC_KEY = sender_header['RSA_PUBLIC_KEY']
-    RSA_PUBLIC_KEY = str.encode(RSA_PUBLIC_KEY)
-  #if true, connection established
-  if sender_header['ACK'] == (SENDER_SYN + 1):
-    sender_header = process_header(sender_header)
-    sock.sendto(sender_header, RECEIVER_ADDRESS)
-    return True
-  else:
-    return False
-#sender handshake
-def establish_connection(sock, key):
-  global AES_KEY
-  AES_KEY = key
-
-  sender_header = initial_SYN()
-  sock.sendto(sender_header, RECEIVER_ADDRESS)
-
-  verify = verify_connection(sock)
-  if verify:
-    print("Connection established")
-    return True
-  else:
-    print("Connection failed")
-    return False
 #send to receiver to stop connection by sending a SYN and waiting for and updated ACK
 def terminate_connection(sock):
   while True:
