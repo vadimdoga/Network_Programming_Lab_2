@@ -25,7 +25,11 @@ def generate_RSA_keys():
 def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
   print("Message length: ", len(msg))
   print("AES Key length: ", len(AES_KEY))
-  len_msg = len(msg)
+
+  if len(msg) > MAX_RSA_LENGTH:
+    len_msg_bool = True
+  else:
+    len_msg_bool = False
 
   msg = msg.encode('utf-8')
   PUBLIC_KEY = RSA.import_key(PUBLIC_KEY)
@@ -61,12 +65,12 @@ def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
     },
     'chksm': chksm,
     'type': 'msg_checksum',
-    'len_msg': len_msg
+    'len_msg_bool': len_msg_bool
   }
 
 #decrypt json with RSA and AES
 def decrypt_json(encrypted_json, PRIVATE_KEY):
-  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg = extract_data_from_json(encrypted_json)
+  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg_bool = extract_data_from_json(encrypted_json)
   #assign
   enc_ciphertext = ciphertext
   PRIVATE_KEY = RSA.import_key(PRIVATE_KEY)
@@ -80,7 +84,7 @@ def decrypt_json(encrypted_json, PRIVATE_KEY):
   #generate aes cipher
   cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce)
 
-  if len_msg > MAX_RSA_LENGTH:
+  if len_msg_bool:
     print("DECRYPTING ONLY AES_KEY WITH RSA")
     #decrypt msg with aes
     msg = cipher_aes.decrypt_and_verify(ciphertext, tag)

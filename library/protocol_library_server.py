@@ -1,14 +1,19 @@
 from library.protocol_header import Header
 from library.protocol_library_crypto import decrypt_json
 from library.protocol_library import convert_json_el_to_byte, json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
-import hashlib
+import hashlib, socket
 
 ERROR_MSG = b"invalid_msg"
 SERVER_ACK = 5320
 T_SERVER_SYN = 3000
 MSG_FROM_SERVER = b"Successful message transmission"
-RSA_PUBLIC_KEY = b""
-RSA_PRIVATE_KEY = b""
+SERVER_ADDRESS = ("127.0.0.1", 8080)
+
+#sock init
+def socket_init():
+  sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+  sock.bind(SERVER_ADDRESS)
+  return sock
 
 #verify checksum on server side
 def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
@@ -25,8 +30,7 @@ def verify_chksm(sock, MSG_FROM_CLIENT, chksm, address):
     print("Valid Message")
     print("Message from Client: ", MSG_FROM_CLIENT)
 #receive on server side
-def receive_from_client(sock):
-  global RSA_PRIVATE_KEY
+def receive_from_client(sock, RSA_PRIVATE_KEY):
   recv_from_client = sock.recvfrom(BUFFER_SIZE)
   client_address = recv_from_client[1]
 
@@ -72,8 +76,7 @@ def receive_from_client(sock):
 
 #server handshake
 #receive from client SYN. Change SYN with ACK and send update ACK with server SYN
-def process_header(server_header, client_address):
-  global RSA_PUBLIC_KEY
+def process_header(server_header, client_address, RSA_PUBLIC_KEY):
   print("Client ", client_address, " connected")
   server_header = json_bytes_loads(server_header)
   #header class
@@ -94,15 +97,11 @@ def verify_connection(server_header):
     return True
   else:
     return False
-def establish_connection(sock, PUBLIC_KEY, PRIVATE_KEY):
-  global RSA_PUBLIC_KEY
-  global RSA_PRIVATE_KEY
-  RSA_PUBLIC_KEY = PUBLIC_KEY
-  RSA_PRIVATE_KEY = PRIVATE_KEY
+def establish_connection(sock, RSA_PUBLIC_KEY):
   while True:
     server_header, client_address = sock.recvfrom(BUFFER_SIZE)
     #recv SYN send server SYN and updated ACK
-    server_header = process_header(server_header, client_address)
+    server_header = process_header(server_header, client_address, RSA_PUBLIC_KEY)
     sock.sendto(server_header, client_address)
 
     recv_from_client = sock.recvfrom(BUFFER_SIZE)
@@ -113,10 +112,10 @@ def establish_connection(sock, PUBLIC_KEY, PRIVATE_KEY):
       break
 
     
-def wait_from_client(server):
+def recv_from_client_and_verify(server, RSA_PRIVATE_KEY):
   while True:
     #recv dict from client
-    recv = receive_from_client(server.sock)
+    recv = receive_from_client(server.sock, RSA_PRIVATE_KEY)
     if recv == 'fin':
       break
     else:
