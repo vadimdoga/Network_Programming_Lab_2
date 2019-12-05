@@ -1,4 +1,4 @@
-/library/__pycache__
+/protocol/library/__pycache__
 .vscode
-/library/sender/__pycache__
-/library/receiver/__pycache__
+/protocol/library/sender/__pycache__
+/protocol/library/receiver/__pycache__
