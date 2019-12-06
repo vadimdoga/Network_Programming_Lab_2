@@ -1,6 +1,7 @@
 from protocol.library.protocol_header import Header
 from protocol.library.protocol_general import json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
 
+SENDER_ADDRESS_ARRAY = []
 RECEIVER_ACK = 5320
 x = ' '
 #receiver handshake
@@ -28,18 +29,35 @@ def establish_connection(sock, RSA_PUBLIC_KEY):
   # while True:
   recv = sock.recvfrom(BUFFER_SIZE)
   sender_address = recv[1]
-  receiver_header = recv[0]
-  receiver_header = json_bytes_loads(receiver_header)
-  #recv SYN send receiver SYN and updated ACK
-  receiver_header = process_header(receiver_header, RSA_PUBLIC_KEY)
-  sock.sendto(receiver_header, sender_address)
+  if sender_address not in get_connected_senders():
+    receiver_header = recv[0]
+    receiver_header = json_bytes_loads(receiver_header)
+    #recv SYN send receiver SYN and updated ACK
+    receiver_header = process_header(receiver_header, RSA_PUBLIC_KEY)
+    sock.sendto(receiver_header, sender_address)
 
-  recv_from_sender = sock.recvfrom(BUFFER_SIZE)
-  receiver_header = recv_from_sender[0]
-  #recv updated ACK and based on it decide if connection established
-  verify = verify_connection(receiver_header)
-  if verify:
-    return sender_address
+    recv_from_sender = sock.recvfrom(BUFFER_SIZE)
+    receiver_header = recv_from_sender[0]
+    #recv updated ACK and based on it decide if connection established
+    verify = verify_connection(receiver_header)
+    if verify:
+      return {
+        'sender_address': sender_address
+      }
   else:
-    return False
+    return {
+      'recv': recv,
+    }
  
+ #array manipulations
+def add_senders_to_array(address):
+  global SENDER_ADDRESS_ARRAY
+  if address not in SENDER_ADDRESS_ARRAY:
+    SENDER_ADDRESS_ARRAY.append(address)
+def get_connected_senders():
+  return SENDER_ADDRESS_ARRAY
+def remove_sender_from_array(address):
+  global SENDER_ADDRESS_ARRAY
+  if address in SENDER_ADDRESS_ARRAY:
+    index = SENDER_ADDRESS_ARRAY.index(address)
+    SENDER_ADDRESS_ARRAY.pop(index)

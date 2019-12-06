@@ -1,6 +1,6 @@
 import json, pickle
 
-BUFFER_SIZE = 30000
+BUFFER_SIZE = 100000
 
 #convert to json and byte format
 def json_bytes_dumps(dumping):

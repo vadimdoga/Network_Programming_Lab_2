@@ -4,18 +4,20 @@ from threading import Thread
 
 x = ' '
 
-def new_clients(receiver):
+def join_clients(receiver):
   while True:
-    sender_address = accept_incoming(receiver.sock, receiver.RSA_PUBLIC_KEY)
-    if sender_address is not False:
+    print(0)
+    connection_result = accept_incoming(receiver.sock, receiver.RSA_PUBLIC_KEY)
+    if 'sender_address' in connection_result:
+      sender_address = connection_result['sender_address']
       print(x * 10 + "SENDER CONNECTED WITH ADDRESS:", sender_address)
-      Thread(target=recv_from_sender_and_verify, args=(receiver.sock, receiver.RSA_PRIVATE_KEY)).start()
+    elif 'recv' in connection_result:
+      print(1)
+      Thread(target=recv_from_sender_and_verify, args=(receiver.sock, receiver.RSA_PRIVATE_KEY, connection_result['recv'])).start()
 
 
 if __name__ == "__main__":
   receiver = Receiver()
   # todo: a listen method witch has a parameter of how many clients/threads will be
-  # new_clients(receiver)
-  accept_thread = Thread(target=new_clients, args=(receiver,))
-  accept_thread.start()
-  accept_thread.join()
+  # join_clients(receiver)
+  Thread(target=join_clients, args=(receiver,)).start()
