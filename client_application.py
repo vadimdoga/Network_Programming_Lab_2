@@ -12,11 +12,7 @@ if __name__ == "__main__":
       sender = Sender() 
     elif val == "send":
       # todo: need to change this method to send to single person
-      while True:
-        send_recv_msg(sender, MSG_FROM_SENDER)
-        if i == 50:
-          break
-        i = i + 1
+      send_recv_msg(sender, MSG_FROM_SENDER)
     elif val == "broadcast":
       print("broadcast")
       # todo: need to add broadcast method to protocol which sends msg to all connected clients

@@ -2,6 +2,7 @@ from protocol.library.protocol_header import Header
 from protocol.library.protocol_crypto import decrypt_json
 from protocol.library.protocol_general import convert_json_el_to_byte, json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
 from protocol.library.receiver.protocol_receiver_header import establish_connection
+
 import hashlib, socket
 
 ERROR_MSG = b"invalid_msg"
@@ -33,65 +34,60 @@ def verify_chksm(sock, MSG_FROM_SENDER, chksm, address):
     print("Message from Sender: ", MSG_FROM_SENDER)
 
 #receive on receiver side
-def receive_from_sender(sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY):
+def receive_from_sender(sock, RSA_PRIVATE_KEY):
   #general recv
   recv_from_sender = sock.recvfrom(BUFFER_SIZE)
   sender_address = recv_from_sender[1]
-  #add sender to array
-  add_senders_to_array(sender_address)
+ 
 
   json_from_sender = recv_from_sender[0]
   json_from_sender = json_bytes_loads(json_from_sender)
-  #if there is type in json then it must decide either it's msg or terminate connection
-  if 'type' in json_from_sender:
-    #if type is msg_checksum then receiver receives a dict with msg,chksm,address
-    if json_from_sender['type'] == 'msg_checksum':
-      #convert json el from str to byte
-      json_from_sender = convert_json_el_to_byte(json_from_sender)
-      #decrypt json
-      json_from_sender = decrypt_json(json_from_sender, RSA_PRIVATE_KEY)
+  #if type is msg_checksum then receiver receives a dict with msg,chksm,address
+  if json_from_sender['type'] == 'msg_checksum':
+    #convert json el from str to byte
+    json_from_sender = convert_json_el_to_byte(json_from_sender)
+    #decrypt json
+    json_from_sender = decrypt_json(json_from_sender, RSA_PRIVATE_KEY)
 
-      msg = json_from_sender["msg"]
-      chksm = json_from_sender['chksm']
+    msg = json_from_sender["msg"]
+    chksm = json_from_sender['chksm']
 
-      return {
-        'msg': msg,
-        'chksm': chksm,
-        'address': sender_address
-      }
-    #if type is fin then receiver acknowledges that it's terminate command
-    elif json_from_sender['type'] == 'fin':
-      termination = terminate_receiver_connection(sock, json_from_sender, sender_address)
-      if termination:
-        return 'fin'
-    elif json_from_sender['type'] == 'fin sender':
-      termination = terminate_sender_connection(sender_address)
-      if termination:
-        return 'fin sender'
-  #if in json is SYN then receiver is establishing connection
-  elif 'SYN' in json_from_sender:
-    #handshake
-    establish_connection(sock, RSA_PUBLIC_KEY, json_from_sender, sender_address)
-    return 'connection established'
-
-def recv_from_sender_and_verify(receiver):
-  #extract keys from receiver
-  RSA_PRIVATE_KEY = receiver.RSA_PRIVATE_KEY
-  RSA_PUBLIC_KEY = receiver.RSA_PUBLIC_KEY
+    return {
+      'msg': msg,
+      'chksm': chksm,
+      'address': sender_address
+    }
+  #if type is fin then receiver acknowledges that it's terminate command
+  elif json_from_sender['type'] == 'fin':
+    termination = terminate_receiver_connection(sock, json_from_sender, sender_address)
+    if termination:
+      return 'fin'
+  elif json_from_sender['type'] == 'fin sender':
+    termination = terminate_sender_connection(sender_address)
+    if termination:
+      return 'fin sender'
+ 
+def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY):
   while True:
     print(get_connected_senders())
     #recv from sender
-    recv = receive_from_sender(receiver.sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY)
+    recv = receive_from_sender(sock, RSA_PRIVATE_KEY)
+    print(recv)
     if recv == 'fin':
-      break
+      return 'fin'
     elif 'msg' in recv:
       #verify the cheksum
       #if chksm not valid retransmit
-      verify_chksm(receiver.sock, recv['msg'], recv['chksm'], recv['address'])
+      verify_chksm(sock, recv['msg'], recv['chksm'], recv['address'])
     
-# def accept_incoming():
-  
-
+def accept_incoming(sock, RSA_PUBLIC_KEY):
+  sender_address = establish_connection(sock, RSA_PUBLIC_KEY)
+  if sender_address is not False:
+    #add sender to array
+    add_senders_to_array(sender_address)
+    return sender_address
+  else:
+    return False
 #recv fin and terminate connection
 def terminate_receiver_connection(sock, t_recv, sender_address):
   while True:
