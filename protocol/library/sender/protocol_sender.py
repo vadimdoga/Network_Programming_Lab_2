@@ -49,14 +49,18 @@ def verify_chksum(sock):
     return msg_from_receiver[0]
 
 #send json to receiver and verify chksm
-def send_recv_msg(sender, MSG_FROM_SENDER):
+def send_msg(sender, MSG_FROM_SENDER):
   #create dict with msg and cheksum
   json_to_send = create_json(MSG_FROM_SENDER)
   #udp connection
   if sender.handshake:
+    #send to receiver
+    sender.sock.sendto(json_to_send, RECEIVER_ADDRESS)
+      
+def recv_msg(sender):
+  if sender.handshake:
+    print("||========================================MESSAGES===========================================||")
     while True:
-      #send to receiver
-      sender.sock.sendto(json_to_send, RECEIVER_ADDRESS)
       #based on recv from receiver, check if data is valid
       recv_msg = verify_chksum(sender.sock)
       if recv_msg == "invalid_msg":
@@ -66,7 +70,6 @@ def send_recv_msg(sender, MSG_FROM_SENDER):
         print("Valid msg.")
         print("Message from Receiver: ", recv_msg)
         break
-
 #send to receiver to stop connection by sending a SYN and waiting for and updated ACK
 def terminate_receiver_connection(sock):
   while True:

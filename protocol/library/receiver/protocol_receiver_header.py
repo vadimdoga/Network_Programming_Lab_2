@@ -25,30 +25,24 @@ def verify_connection(receiver_header):
     return True
   else:
     return False
-def establish_connection(sock, RSA_PUBLIC_KEY):
-  # while True:
-  recv = sock.recvfrom(BUFFER_SIZE)
-  sender_address = recv[1]
-  if sender_address not in get_connected_senders():
-    receiver_header = recv[0]
-    receiver_header = json_bytes_loads(receiver_header)
-    #recv SYN send receiver SYN and updated ACK
-    receiver_header = process_header(receiver_header, RSA_PUBLIC_KEY)
-    sock.sendto(receiver_header, sender_address)
+def establish_connection(sock, RSA_PUBLIC_KEY, recv_object):
+  SENDER_ADDRESS = recv_object[1]
+  receiver_header = recv_object[0]
+  receiver_header = json_bytes_loads(receiver_header)
 
-    recv_from_sender = sock.recvfrom(BUFFER_SIZE)
-    receiver_header = recv_from_sender[0]
-    #recv updated ACK and based on it decide if connection established
-    verify = verify_connection(receiver_header)
-    if verify:
-      return {
-        'sender_address': sender_address
-      }
-  else:
+  #recv SYN send receiver SYN and updated ACK
+  receiver_header = process_header(receiver_header, RSA_PUBLIC_KEY)
+  sock.sendto(receiver_header, SENDER_ADDRESS)
+
+  recv_from_sender = sock.recvfrom(BUFFER_SIZE)
+  receiver_header = recv_from_sender[0]
+  #recv updated ACK and based on it decide if connection established
+  verify = verify_connection(receiver_header)
+  if verify:
     return {
-      'recv': recv,
+      'SENDER_ADDRESS': SENDER_ADDRESS
     }
- 
+  
  #array manipulations
 def add_senders_to_array(address):
   global SENDER_ADDRESS_ARRAY

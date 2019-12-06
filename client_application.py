@@ -1,31 +1,40 @@
 from protocol.sender import Sender
-from protocol.library.sender.protocol_sender import send_recv_msg, terminate_receiver_connection, terminate_sender_connection
+from protocol.library.sender.protocol_sender import recv_msg, send_msg, terminate_receiver_connection, terminate_sender_connection
+from threading import Thread
 
-MSG_FROM_SENDER = "hello from sender"
-i = 0
-
-if __name__ == "__main__":
-  #send json to server and receive it
+def main_menu():
   while True:
-    val = input("$>")
-    if val == "connect":
-      sender = Sender() 
-    elif val == "send":
-      # todo: need to change this method to send to single person
-      while True:
-        send_recv_msg(sender, MSG_FROM_SENDER)
-        print(i)
-        i = i + 1
-        if i == 25:
+    conn_val = input("$>")
+    if conn_val == "connect":
+      sender = Sender()
+      msg_thread = Thread(target=recv_msg, args=(sender,))
+      msg_thread.start()
+      while True: 
+        val = input("$>")
+        if val == "send":
+          # todo: need to change this method to send to single person
+          msg = input("MESSAGE: ")
+          send_msg(sender, msg)
+        elif val == "broadcast":
+          print("broadcast")
+          # todo: need to add broadcast method to protocol which sends msg to all connected clients
+        elif val == "stop":
+          #stop client connection with server
+          terminate_sender_connection(sender.sock)
           break
-    elif val == "broadcast":
-      print("broadcast")
-      # todo: need to add broadcast method to protocol which sends msg to all connected clients
-    elif val == "stop":
-      #stop connection with server
-      terminate_sender_connection(sender.sock)
-    elif val == "stop server":
-      # todo: when someone send stop server, server must broadcast that it stopped
-      terminate_receiver_connection(sender.sock)
+        elif val == "stop server":
+          #close server
+          terminate_receiver_connection(sender.sock)
+          break
+        else:
+          print('This command does not exist!')
+    elif (conn_val == "send" or conn_val == "broadcast" or conn_val == "stop" or conn_val == "stop server"):
+      print('You need to type `connect` first!')
     else:
       print('This command does not exist!')
+
+
+if __name__ == "__main__":
+  Thread(target=main_menu).start()
+  # get_always_msg()
+  # main_menu()
