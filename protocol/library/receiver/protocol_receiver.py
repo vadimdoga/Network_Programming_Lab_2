@@ -9,6 +9,7 @@ T_RECEIVER_SYN = 3000
 MSG_FROM_RECEIVER = b"Successful message transmission"
 RECEIVER_ADDRESS = ("127.0.0.1", 8080)
 x = ' '
+SENDER_ADDRESS_ARRAY = []
 
 #sock init
 def socket_init():
@@ -36,6 +37,8 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY):
   #general recv
   recv_from_sender = sock.recvfrom(BUFFER_SIZE)
   sender_address = recv_from_sender[1]
+  #add sender to array
+  add_senders_to_array(sender_address)
 
   json_from_sender = recv_from_sender[0]
   json_from_sender = json_bytes_loads(json_from_sender)
@@ -58,17 +61,39 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY):
       }
     #if type is fin then receiver acknowledges that it's terminate command
     elif json_from_sender['type'] == 'fin':
-      termination = terminate_connection(sock, json_from_sender, sender_address)
+      termination = terminate_receiver_connection(sock, json_from_sender, sender_address)
       if termination:
         return 'fin'
+    elif json_from_sender['type'] == 'fin sender':
+      termination = terminate_sender_connection(sender_address)
+      if termination:
+        return 'fin sender'
   #if in json is SYN then receiver is establishing connection
   elif 'SYN' in json_from_sender:
     #handshake
     establish_connection(sock, RSA_PUBLIC_KEY, json_from_sender, sender_address)
     return 'connection established'
+
+def recv_from_sender_and_verify(receiver):
+  #extract keys from receiver
+  RSA_PRIVATE_KEY = receiver.RSA_PRIVATE_KEY
+  RSA_PUBLIC_KEY = receiver.RSA_PUBLIC_KEY
+  while True:
+    print(get_connected_senders())
+    #recv from sender
+    recv = receive_from_sender(receiver.sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY)
+    if recv == 'fin':
+      break
+    elif 'msg' in recv:
+      #verify the cheksum
+      #if chksm not valid retransmit
+      verify_chksm(receiver.sock, recv['msg'], recv['chksm'], recv['address'])
     
+# def accept_incoming():
+  
+
 #recv fin and terminate connection
-def terminate_connection(sock, t_recv, sender_address):
+def terminate_receiver_connection(sock, t_recv, sender_address):
   while True:
     #receives SYN from sender and send updated ACK to sender for it to stop
     t_send_header = Header(t_recv['SYN'], T_RECEIVER_SYN)
@@ -88,19 +113,24 @@ def terminate_connection(sock, t_recv, sender_address):
       print(x * 10 + "Error during stopping connection.")
       return False
 
-def recv_from_sender_and_verify(receiver):
-  #extract keys from receiver
-  RSA_PRIVATE_KEY = receiver.RSA_PRIVATE_KEY
-  RSA_PUBLIC_KEY = receiver.RSA_PUBLIC_KEY
-  while True:
-    #recv from sender
-    recv = receive_from_sender(receiver.sock, RSA_PRIVATE_KEY, RSA_PUBLIC_KEY)
-    if recv == 'fin':
-      break
-    elif 'msg' in recv:
-      #verify the cheksum
-      #if chksm not valid retransmit
-      verify_chksm(receiver.sock, recv['msg'], recv['chksm'], recv['address'])
-        
-
-
+#terminate sender conenction
+def terminate_sender_connection(sender_address):
+  if sender_address in SENDER_ADDRESS_ARRAY:
+    remove_sender_from_array(sender_address)
+    if sender_address not in SENDER_ADDRESS_ARRAY:
+      print(x * 10 + "SENDER DISCONNECTED FROM SERVER:", sender_address)
+      return True
+  else:
+    print(x * 10 + "SUCH SENDER ADDRESS DO NOT EXIST")
+#array manipulations
+def add_senders_to_array(address):
+  global SENDER_ADDRESS_ARRAY
+  if address not in SENDER_ADDRESS_ARRAY:
+    SENDER_ADDRESS_ARRAY.append(address)
+def get_connected_senders():
+  return SENDER_ADDRESS_ARRAY
+def remove_sender_from_array(address):
+  global SENDER_ADDRESS_ARRAY
+  if address in SENDER_ADDRESS_ARRAY:
+    index = SENDER_ADDRESS_ARRAY.index(address)
+    SENDER_ADDRESS_ARRAY.pop(index)

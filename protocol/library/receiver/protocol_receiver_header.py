@@ -20,7 +20,6 @@ def process_header(receiver_header, sender_address, RSA_PUBLIC_KEY):
 #receive updated ACK from sender to confirm connection
 def verify_connection(receiver_header):
   receiver_header = json_bytes_loads(receiver_header)
-
   if receiver_header['ACK'] == (RECEIVER_ACK + 1):
     print(x * 10 + "Connection established")
     return True
@@ -30,10 +29,12 @@ def establish_connection(sock, RSA_PUBLIC_KEY, receiver_header, sender_address):
   while True:
     #recv SYN send receiver SYN and updated ACK
     receiver_header = process_header(receiver_header, sender_address, RSA_PUBLIC_KEY)
+    print(receiver_header)
     sock.sendto(receiver_header, sender_address)
 
     recv_from_sender = sock.recvfrom(BUFFER_SIZE)
     receiver_header = recv_from_sender[0]
+    print(receiver_header)
     #recv updated ACK and based on it decide if connection established
     verify = verify_connection(receiver_header)
     if verify:

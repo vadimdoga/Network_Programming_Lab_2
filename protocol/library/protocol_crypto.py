@@ -23,9 +23,6 @@ def generate_RSA_keys():
 
 #encrypt json with RSA and AES
 def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
-  print("Message length: ", len(msg))
-  print("AES Key length: ", len(AES_KEY))
-
   if len(msg) > MAX_RSA_LENGTH:
     len_msg_bool = True
   else:
@@ -39,7 +36,7 @@ def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
   cipher_aes = AES.new(AES_KEY, AES.MODE_EAX)
 
   if len(msg) > MAX_RSA_LENGTH:
-    print("MSG LENGTH TO LARGE. ENCRYPTING ONLY AES_KEY WITH RSA")
+    print("LARGE MSG. ENCRYPTING ONLY AES_KEY WITH RSA")
     #encrypt aes key with public rsa key
     enc_aes_key = cipher_rsa.encrypt(AES_KEY)
     #encrypt msg with aes 

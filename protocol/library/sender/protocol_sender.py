@@ -68,7 +68,7 @@ def send_recv_msg(sender, MSG_FROM_SENDER):
         break
 
 #send to receiver to stop connection by sending a SYN and waiting for and updated ACK
-def terminate_connection(sock):
+def terminate_receiver_connection(sock):
   while True:
     #send a json with type fin
     t_sender_header = Header(T_SENDER_SYN, None)
@@ -93,4 +93,7 @@ def terminate_connection(sock):
     else:
       print(x * 10 + "Error during canceling connection.")
 
-
+def terminate_sender_connection(sock):
+  t_sender_conn = {'type':'fin sender'}
+  t_sender_conn = json_bytes_dumps(t_sender_conn)
+  sock.sendto(t_sender_conn, RECEIVER_ADDRESS)
