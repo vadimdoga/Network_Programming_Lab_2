@@ -41,7 +41,12 @@ def accept_incoming(sock, RSA_PUBLIC_KEY, max_nr_of_clients):
     
     #if nr of connected clients is max
     else:
-      sock.sendto(b'max limit', SENDER_ADDRESS)
+      print(x * 15 + "MAXIMUM LIMIT")
+      max_limit = {
+        'type': 'max limit'
+      }
+      max_limit = json_bytes_dumps(max_limit)
+      sock.sendto(max_limit, SENDER_ADDRESS)
       return 'nothing'
 
   # 2.if already connected send recv from buffer to recv_and_verify method for future process
@@ -93,6 +98,14 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
       'type_of_sending': type_of_sending,
       'send_to_address': send_to_address
     }
+  #get connected clients method
+  elif json_from_sender['type'] == 'get clients':
+    conn_clients = {
+      'clients': get_connected_senders(),
+      'type': 'get clients'
+    }
+    conn_clients = json_bytes_dumps(conn_clients)
+    sock.sendto(conn_clients, SENDER_ADDRESS)
   #if type is fin then receiver acknowledges that it's terminate command(server terminates)
   elif json_from_sender['type'] == 'fin':
     #all the ACK SYN process
@@ -105,6 +118,7 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
         'type': 'server_disc'
       }
       server_disc = json_bytes_dumps(server_disc)
+      #broadcast to all
       broadcast(sock, server_disc)
 
       senders_array_copy = []
@@ -139,7 +153,8 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
         valid_msg = recv['msg']
         valid_json = {
           'msg': valid_msg,
-          'type': 'msg'
+          'type': 'msg',
+          'sender': recv['SENDER_ADDRESS']
         }
         valid_json = json_bytes_dumps(valid_json)
         broadcast(sock, valid_json)
@@ -152,12 +167,20 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
           valid_msg = recv['msg']
           valid_json = {
             'msg': valid_msg,
-            'type': 'msg'
+            'type': 'msg',
+            'sender': recv['SENDER_ADDRESS']
           }
           valid_json = json_bytes_dumps(valid_json)
           sock.sendto(valid_json, SEND_TO_ADDRESS)
+        #if in send method the port was invalid
         else:
+          valid_json = {
+            'type': 'invalid port'
+          }
+          valid_json = json_bytes_dumps(valid_json)
           print("Such address does not exist!")
+          sock.sendto(valid_json, recv['SENDER_ADDRESS'])
+#broadcast method
 def broadcast(sock, msg):
   connected_clients = get_connected_senders()
   for client in connected_clients:

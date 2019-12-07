@@ -25,6 +25,7 @@ def verify_connection(receiver_header):
     return True
   else:
     return False
+#establishes the connection
 def establish_connection(sock, RSA_PUBLIC_KEY, recv_object):
   SENDER_ADDRESS = recv_object[1]
   receiver_header = recv_object[0]

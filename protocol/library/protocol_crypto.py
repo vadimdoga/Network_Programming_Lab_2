@@ -5,6 +5,7 @@ from Crypto.PublicKey import RSA
 import json, base64
 
 MAX_RSA_LENGTH = 214
+x = " "
 
 #generate aes key
 def generate_AES_key():
@@ -36,7 +37,7 @@ def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY, type_of_sending, send_to
   cipher_aes = AES.new(AES_KEY, AES.MODE_EAX)
 
   if len(msg) > MAX_RSA_LENGTH:
-    print("LARGE MSG. ENCRYPTING ONLY AES_KEY WITH RSA")
+    print(x * 15 + "LARGE MSG. ENCRYPTING ONLY AES_KEY WITH RSA")
     #encrypt aes key with public rsa key
     enc_aes_key = cipher_rsa.encrypt(AES_KEY)
     #encrypt msg with aes 
@@ -44,7 +45,7 @@ def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY, type_of_sending, send_to
     nonce = cipher_aes.nonce
     
   else:
-    print("ENCRYPTING MSG & AES_KEY WITH RSA")
+    print(x * 15 + "ENCRYPTING MSG & AES_KEY WITH RSA")
     #encrypt aes key with public rsa key
     enc_aes_key = cipher_rsa.encrypt(AES_KEY)
     #encrypt msg with aes and rsa
@@ -84,11 +85,11 @@ def decrypt_json(encrypted_json, PRIVATE_KEY):
   cipher_aes = AES.new(aes_key, AES.MODE_EAX, nonce)
 
   if len_msg_bool:
-    print("DECRYPTING ONLY AES_KEY WITH RSA")
+    print(x * 15 + "DECRYPTING ONLY AES_KEY WITH RSA")
     #decrypt msg with aes
     msg = cipher_aes.decrypt_and_verify(ciphertext, tag)
   else:
-    print("DECRYPTING MSG & AES_KEY WITH RSA")
+    print(x * 15 + "DECRYPTING MSG & AES_KEY WITH RSA")
     #decrypt msg with rsa
     ciphertext = cipher_rsa.decrypt(enc_ciphertext)
     #decrypt msg with aes

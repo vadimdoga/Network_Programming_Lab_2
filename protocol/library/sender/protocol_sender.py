@@ -22,6 +22,11 @@ def get_RSA_PUBLIC_KEY(key):
 def get_AES_KEY(key):
   global AES_KEY
   AES_KEY = key
+
+def get_connected_clients(sock):
+  get_clients_json = {'type':'get clients'}
+  get_clients_json = json_bytes_dumps(get_clients_json)
+  sock.sendto(get_clients_json, RECEIVER_ADDRESS)
   
 #generate a json with msg and it's checksum
 def create_json(msg_from_sender, type_of_sending, send_to_address):
@@ -55,16 +60,24 @@ def send_msg(sender, MSG_FROM_SENDER, type_of_sending, PORT):
 def verify_chksum(msg_from_receiver):
   if 'type' in msg_from_receiver:
     if msg_from_receiver['type'] == 'msg':
-      #send msg from receiver
-      print("M: ", msg_from_receiver['msg'])
+      #print message in console
+      print("\n{} ".format(msg_from_receiver['sender']), msg_from_receiver['msg'])
     elif msg_from_receiver['type'] == 'client_disc':
+      #when client disconnects
       print(x * 15 + "{} DISCONNECTED".format(msg_from_receiver['SENDER_ADDRESS']))
     elif msg_from_receiver['type'] == 'client_conn':
+      #when client connects to server
       print(x * 15 + "{} CONNECTED".format(msg_from_receiver['SENDER_ADDRESS']))
     elif msg_from_receiver['type'] == 'server_disc':
+      #when client stops server
       print(x * 15 + "CONNECTION TERMINATED")
       os._exit(0)
-
+    elif msg_from_receiver['type'] == 'get clients':
+      print("\nCONNECTED CLIENTS: {}".format(msg_from_receiver['clients']))
+    elif msg_from_receiver['type'] == 'invalid port':
+      print(x * 15 + "INVALID PORT. THE MESSAGE WAS NOT SENT.")
+      
+  #if invalid message retransmit
   elif msg_from_receiver == 'invalid_msg':
     #retransmission
     print(x * 10 + "Invalid msg, retransmitting message.")
@@ -104,7 +117,7 @@ def terminate_receiver_connection(sock):
       break
     else:
       print(x * 10 + "Error during canceling connection.")
-
+#exits client server still wokring
 def terminate_sender_connection(sock):
   t_sender_conn = {'type':'fin sender'}
   t_sender_conn = json_bytes_dumps(t_sender_conn)
