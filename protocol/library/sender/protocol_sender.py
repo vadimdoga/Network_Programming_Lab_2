@@ -1,7 +1,7 @@
 from protocol.library.protocol_header import Header
 from protocol.library.protocol_crypto import encrypt_json
 from protocol.library.protocol_general import json_bytes_dumps, json_bytes_loads, convert_json_el_to_str, BUFFER_SIZE
-import hashlib, socket
+import hashlib, socket, os
 
 RECEIVER_ADDRESS = ("127.0.0.1", 8080)
 T_SENDER_SYN = 2000
@@ -37,16 +37,7 @@ def create_json(msg_from_sender):
   json_to_send = json_bytes_dumps(json_to_send)
 
   return json_to_send
-
-#verify receiver response on validity of checksum
-def verify_chksum(sock):
-  msg_from_receiver = sock.recvfrom(BUFFER_SIZE)
-  if msg_from_receiver[0] == b'invalid_msg':
-    #retransmission
-    return "invalid_msg"
-  else:
-    #send msg from receiver
-    return msg_from_receiver[0]
+     
 
 #send json to receiver and verify chksm
 def send_msg(sender, MSG_FROM_SENDER):
@@ -57,19 +48,34 @@ def send_msg(sender, MSG_FROM_SENDER):
     #send to receiver
     sender.sock.sendto(json_to_send, RECEIVER_ADDRESS)
       
+#verify receiver response on validity of checksum
+def verify_chksum(msg_from_receiver):
+  if 'type' in msg_from_receiver:
+    if msg_from_receiver['type'] == 'msg':
+      #send msg from receiver
+      print("M: ", msg_from_receiver['msg'])
+    elif msg_from_receiver['type'] == 'client_disc':
+      print(x * 15 + "{} DISCONNECTED".format(msg_from_receiver['SENDER_ADDRESS']))
+    elif msg_from_receiver['type'] == 'client_conn':
+      print(x * 15 + "{} CONNECTED".format(msg_from_receiver['SENDER_ADDRESS']))
+    elif msg_from_receiver['type'] == 'server_disc':
+      print(x * 15 + "CONNECTION TERMINATED")
+      os._exit(0)
+
+  elif msg_from_receiver == 'invalid_msg':
+    #retransmission
+    print(x * 10 + "Invalid msg, retransmitting message.")
+
 def recv_msg(sender):
   if sender.handshake:
-    print("||========================================MESSAGES===========================================||")
+    print("||===================================MESSAGES====================================||")
     while True:
+      msg_from_receiver = sender.sock.recvfrom(BUFFER_SIZE)
+      msg_from_receiver = json_bytes_loads(msg_from_receiver[0])
+
       #based on recv from receiver, check if data is valid
-      recv_msg = verify_chksum(sender.sock)
-      if recv_msg == "invalid_msg":
-        print(x * 10 + "Invalid msg, retransmitting message.")
-      else:
-        #print msg form receiver
-        print("Valid msg.")
-        print("Message from Receiver: ", recv_msg)
-        break
+      verify_chksum(msg_from_receiver)
+      
 #send to receiver to stop connection by sending a SYN and waiting for and updated ACK
 def terminate_receiver_connection(sock):
   while True:

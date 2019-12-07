@@ -7,7 +7,6 @@ import hashlib, socket
 
 ERROR_MSG = b"invalid_msg"
 T_RECEIVER_SYN = 3000
-MSG_FROM_RECEIVER = b"Successful message transmission"
 RECEIVER_ADDRESS = ("127.0.0.1", 8080)
 x = ' '
 
@@ -29,6 +28,13 @@ def accept_incoming(sock, RSA_PUBLIC_KEY, max_nr_of_clients):
     if len(get_connected_senders()) < max_nr_of_clients:
       #establish connection
       connection_result = establish_connection(sock, RSA_PUBLIC_KEY, recv)
+      #broadcast to all that somebody connected
+      client_conn = {
+        'SENDER_ADDRESS': connection_result['SENDER_ADDRESS'],
+        'type': 'client_conn'
+      }
+      client_conn = json_bytes_dumps(client_conn)
+      broadcast(sock, client_conn)
       #add sender to array
       add_senders_to_array(connection_result['SENDER_ADDRESS'])
       return connection_result
@@ -45,19 +51,20 @@ def accept_incoming(sock, RSA_PUBLIC_KEY, max_nr_of_clients):
     }
 
 #verify checksum on receiver side
-def verify_chksm(sock, MSG_FROM_SENDER, chksm, address):
+def verify_chksm(sock, MSG_FROM_SENDER, chksm, SENDER_ADDRESS):
   #hash msg and verify if it's equal with checksum
   hashed_msg = str.encode(MSG_FROM_SENDER)
   hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
   if chksm != hashed_msg:
     #if not valid send to sender error msg
-    sock.sendto(ERROR_MSG, address)
+    sock.sendto(ERROR_MSG, SENDER_ADDRESS)
     print("Invalid Message, waiting for retransmission.")
+    return False
   else:
-    #if valid send to sender msg from receiver
-    sock.sendto(MSG_FROM_RECEIVER, address)
+    #if valid return true
     print("Valid Message")
-    print("Message from Sender: ", MSG_FROM_SENDER)
+    print("Message from {}: ".format(SENDER_ADDRESS), MSG_FROM_SENDER)
+    return True
 
 #receive on receiver side
 def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
@@ -81,29 +88,40 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
     return {
       'msg': msg,
       'chksm': chksm,
-      'address': SENDER_ADDRESS
+      'SENDER_ADDRESS': SENDER_ADDRESS
     }
   #if type is fin then receiver acknowledges that it's terminate command(server terminates)
   elif json_from_sender['type'] == 'fin':
-    #todo:send to all that server is closed
     #all the ACK SYN process
     termination = terminate_receiver_connection(sock, json_from_sender, SENDER_ADDRESS)
     if termination:
       # if true make a copy of array and delete all connection from it
       senders = get_connected_senders()
+      #broadcast to all that server is closed and they need to disconnect
+      server_disc = {
+        'type': 'server_disc'
+      }
+      server_disc = json_bytes_dumps(server_disc)
+      broadcast(sock, server_disc)
+
       senders_array_copy = []
       for sender in senders:
         senders_array_copy.append(sender)
       for sender in senders_array_copy:
         terminate_sender_connection(sender)
+
       os._exit(0)
   # sender terminates connection
   elif json_from_sender['type'] == 'fin sender':
-    #todo: send to all that sender disconected
     termination = terminate_sender_connection(SENDER_ADDRESS)
     print("CONNECTED CLIENTS: ", get_connected_senders())
     if termination:
-      return 'fin sender'
+      client_disc = {
+        'SENDER_ADDRESS': SENDER_ADDRESS,
+        'type': 'client_disc'
+      }
+      client_disc = json_bytes_dumps(client_disc)
+      broadcast(sock, client_disc)
  
 def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
   #recv from sender
@@ -111,8 +129,22 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
   if 'msg' in recv:
     #verify the cheksum
     #if chksm not valid retransmit
-    verify_chksm(sock, recv['msg'], recv['chksm'], recv['address'])
-    
+    verification = verify_chksm(sock, recv['msg'], recv['chksm'], recv['SENDER_ADDRESS'])
+    if verification:
+      valid_msg = recv['msg']
+      valid_json = {
+        'msg': valid_msg,
+        'type': 'msg'
+      }
+      valid_json = json_bytes_dumps(valid_json)
+
+      broadcast(sock, valid_json)
+      
+def broadcast(sock, msg):
+  connected_clients = get_connected_senders()
+  for client in connected_clients:
+    sock.sendto(msg, client)
+
 #recv fin and terminate connection
 def terminate_receiver_connection(sock, t_recv, SENDER_ADDRESS):
   while True:

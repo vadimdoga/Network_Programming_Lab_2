@@ -1,7 +1,7 @@
 from protocol.sender import Sender
 from protocol.library.sender.protocol_sender import recv_msg, send_msg, terminate_receiver_connection, terminate_sender_connection
 from threading import Thread
-
+import os
 def main_menu():
   while True:
     conn_val = input("$>")
@@ -26,6 +26,9 @@ def main_menu():
           #close server
           terminate_receiver_connection(sender.sock)
           break
+        elif val == "exit":
+          terminate_sender_connection(sender.sock)
+          os._exit(0)
         else:
           print('This command does not exist!')
     elif (conn_val == "send" or conn_val == "broadcast" or conn_val == "stop" or conn_val == "stop server"):
