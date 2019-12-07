@@ -74,7 +74,6 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
   SENDER_ADDRESS = recv_from_sender[1]
   json_from_sender = recv_from_sender[0]
   json_from_sender = json_bytes_loads(json_from_sender)
-
   #if type is msg_checksum then receiver receives a dict with msg,chksm,address
   if json_from_sender['type'] == 'msg_checksum':
     #convert json el from str to byte
@@ -84,11 +83,15 @@ def receive_from_sender(sock, RSA_PRIVATE_KEY, recv_object):
 
     msg = json_from_sender["msg"]
     chksm = json_from_sender['chksm']
+    type_of_sending = json_from_sender['type_of_sending']
+    send_to_address = json_from_sender['send_to_address']
 
     return {
       'msg': msg,
       'chksm': chksm,
-      'SENDER_ADDRESS': SENDER_ADDRESS
+      'SENDER_ADDRESS': SENDER_ADDRESS,
+      'type_of_sending': type_of_sending,
+      'send_to_address': send_to_address
     }
   #if type is fin then receiver acknowledges that it's terminate command(server terminates)
   elif json_from_sender['type'] == 'fin':
@@ -131,15 +134,30 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
     #if chksm not valid retransmit
     verification = verify_chksm(sock, recv['msg'], recv['chksm'], recv['SENDER_ADDRESS'])
     if verification:
-      valid_msg = recv['msg']
-      valid_json = {
-        'msg': valid_msg,
-        'type': 'msg'
-      }
-      valid_json = json_bytes_dumps(valid_json)
-
-      broadcast(sock, valid_json)
-      
+      #broadcast
+      if recv['type_of_sending'] == 'broadcast':
+        valid_msg = recv['msg']
+        valid_json = {
+          'msg': valid_msg,
+          'type': 'msg'
+        }
+        valid_json = json_bytes_dumps(valid_json)
+        broadcast(sock, valid_json)
+      #send to specific client
+      elif recv['type_of_sending'] == 'send':
+        ADDRESS = recv['send_to_address'][0]
+        PORT = recv['send_to_address'][1]
+        SEND_TO_ADDRESS = (ADDRESS, PORT)
+        if SEND_TO_ADDRESS in get_connected_senders():
+          valid_msg = recv['msg']
+          valid_json = {
+            'msg': valid_msg,
+            'type': 'msg'
+          }
+          valid_json = json_bytes_dumps(valid_json)
+          sock.sendto(valid_json, SEND_TO_ADDRESS)
+        else:
+          print("Such address does not exist!")
 def broadcast(sock, msg):
   connected_clients = get_connected_senders()
   for client in connected_clients:

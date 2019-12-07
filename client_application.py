@@ -12,12 +12,12 @@ def main_menu():
       while True: 
         val = input("$>")
         if val == "send":
-          # todo: need to change this method to send to single person
+          PORT = int(input("PORT: "))
           msg = input("MESSAGE: ")
-          send_msg(sender, msg)
+          send_msg(sender, msg, 'send', PORT)
         elif val == "broadcast":
-          print("broadcast")
-          # todo: need to add broadcast method to protocol which sends msg to all connected clients
+          msg = input("MESSAGE: ")
+          send_msg(sender, msg, 'broadcast', '')
         elif val == "stop":
           #stop client connection with server
           terminate_sender_connection(sender.sock)

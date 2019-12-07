@@ -22,7 +22,7 @@ def generate_RSA_keys():
   return PUBLIC_KEY, PRIVATE_KEY
 
 #encrypt json with RSA and AES
-def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
+def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY, type_of_sending, send_to_address):
   if len(msg) > MAX_RSA_LENGTH:
     len_msg_bool = True
   else:
@@ -62,12 +62,14 @@ def encrypt_json(msg, chksm, type, PUBLIC_KEY, AES_KEY):
     },
     'chksm': chksm,
     'type': 'msg_checksum',
-    'len_msg_bool': len_msg_bool
+    'type_of_sending': type_of_sending,
+    'len_msg_bool': len_msg_bool,
+    'send_to_address': send_to_address
   }
 
 #decrypt json with RSA and AES
 def decrypt_json(encrypted_json, PRIVATE_KEY):
-  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg_bool = extract_data_from_json(encrypted_json)
+  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, type_of_sending, len_msg_bool, send_to_address = extract_data_from_json(encrypted_json)
   #assign
   enc_ciphertext = ciphertext
   PRIVATE_KEY = RSA.import_key(PRIVATE_KEY)
@@ -96,5 +98,7 @@ def decrypt_json(encrypted_json, PRIVATE_KEY):
   return {
     'msg': msg,
     'chksm': chksm,
-    'type': msg_type
+    'type': msg_type,
+    'type_of_sending': type_of_sending,
+    'send_to_address': send_to_address
   }

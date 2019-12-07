@@ -24,13 +24,13 @@ def get_AES_KEY(key):
   AES_KEY = key
   
 #generate a json with msg and it's checksum
-def create_json(msg_from_sender):
+def create_json(msg_from_sender, type_of_sending, send_to_address):
   encoded_msg_from_sender = str.encode(msg_from_sender)
   #checksum
   chksm = hashlib.sha1(encoded_msg_from_sender).hexdigest()
   #return dict with msg, checksum and type that cand be msg_checksum either fin(terminate connection)
   #encrypt json
-  json_to_send = encrypt_json(msg_from_sender, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY)
+  json_to_send = encrypt_json(msg_from_sender, chksm, 'msg_checksum', RSA_PUBLIC_KEY, AES_KEY, type_of_sending, send_to_address)
   #convert json el from bytes to str
   json_to_send = convert_json_el_to_str(json_to_send)
   #convert to json and bytes
@@ -38,11 +38,14 @@ def create_json(msg_from_sender):
 
   return json_to_send
      
-
-#send json to receiver and verify chksm
-def send_msg(sender, MSG_FROM_SENDER):
+#broadcast json to receiver 
+def send_msg(sender, MSG_FROM_SENDER, type_of_sending, PORT):
+  if type_of_sending == 'broadcast':
+    send_to_address = ''
+  else:
+    send_to_address = ("127.0.0.1", PORT)
   #create dict with msg and cheksum
-  json_to_send = create_json(MSG_FROM_SENDER)
+  json_to_send = create_json(MSG_FROM_SENDER, type_of_sending, send_to_address)
   #udp connection
   if sender.handshake:
     #send to receiver
