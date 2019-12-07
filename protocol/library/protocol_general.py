@@ -1,6 +1,6 @@
 import json, pickle
 
-BUFFER_SIZE = 30000
+BUFFER_SIZE = 100000
 
 #convert to json and byte format
 def json_bytes_dumps(dumping):
@@ -15,7 +15,7 @@ def json_bytes_loads(loading):
 #convert json elements from bytes to string
 def convert_json_el_to_str(json):
   #extract
-  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg_bool = extract_data_from_json(json)
+  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, type_of_sending, len_msg_bool, send_to_address = extract_data_from_json(json)
 
   #convert
   enc_aes_key = enc_aes_key.decode('ISO-8859-1')
@@ -32,12 +32,14 @@ def convert_json_el_to_str(json):
     },
     'chksm': chksm,
     'type': msg_type,
-    'len_msg_bool': len_msg_bool
+    'type_of_sending': type_of_sending,
+    'len_msg_bool': len_msg_bool,
+    'send_to_address': send_to_address
   }
 #convert elements from json object from str to bytes
 def convert_json_el_to_byte(json):
   #extract
-  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg_bool = extract_data_from_json(json)
+  enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, type_of_sending, len_msg_bool, send_to_address = extract_data_from_json(json)
 
   #convert
   enc_aes_key = enc_aes_key.encode('ISO-8859-1')
@@ -54,7 +56,9 @@ def convert_json_el_to_byte(json):
     },
     'chksm': chksm,
     'type': msg_type,
-    'len_msg_bool': len_msg_bool
+    'type_of_sending': type_of_sending,
+    'len_msg_bool': len_msg_bool,
+    'send_to_address': send_to_address
   }
 #extract from json all data and return them 
 def extract_data_from_json(json):
@@ -65,8 +69,10 @@ def extract_data_from_json(json):
   ciphertext = json['msg']['ciphertext']
   chksm = json['chksm']
   msg_type = json['type']
+  type_of_sending = json['type_of_sending']
   len_msg_bool = json['len_msg_bool']
+  send_to_address = json['send_to_address']
   
-  return enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, len_msg_bool
+  return enc_aes_key, nonce, tag, ciphertext, chksm, msg_type, type_of_sending, len_msg_bool, send_to_address
   
 

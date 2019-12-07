@@ -1,9 +1,10 @@
-from library.protocol_header import Header
-from library.protocol_general import json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
-from library.sender.protocol_sender import get_RSA_PUBLIC_KEY, get_AES_KEY
+from protocol.library.protocol_header import Header
+from protocol.library.protocol_general import json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
+from protocol.library.sender.protocol_sender import get_RSA_PUBLIC_KEY, get_AES_KEY
 
 SENDER_SYN = 4320
 RECEIVER_ADDRESS = ("127.0.0.1", 8080)
+x = ' '
 
 #sender handshake
 #send sender SYN to receiver side
@@ -47,8 +48,8 @@ def establish_connection(sock, key):
 
   verify = verify_connection(sock)
   if verify:
-    print("Connection established")
+    print(x * 10 + "Connection established")
     return True
   else:
-    print("Connection failed")
+    print(x * 10 + "Connection failed")
     return False
