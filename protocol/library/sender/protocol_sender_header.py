@@ -1,9 +1,10 @@
 from protocol.library.protocol_header import Header
 from protocol.library.protocol_general import json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
 from protocol.library.sender.protocol_sender import get_RSA_PUBLIC_KEY, get_AES_KEY
+import sys
 
 SENDER_SYN = 4320
-RECEIVER_ADDRESS = ("127.0.0.1", 8080)
+RECEIVER_ADDRESS = ("127.0.0.1", int(sys.argv[2]))
 x = ' '
 
 #sender handshake

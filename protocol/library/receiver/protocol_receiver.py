@@ -2,13 +2,13 @@ from protocol.library.protocol_header import Header
 from protocol.library.protocol_crypto import decrypt_json
 from protocol.library.protocol_general import convert_json_el_to_byte, json_bytes_dumps, json_bytes_loads, BUFFER_SIZE
 from protocol.library.receiver.protocol_receiver_header import establish_connection, add_senders_to_array, get_connected_senders, remove_sender_from_array
-import os
+import os, sys
 import hashlib, socket
 
-ERROR_MSG = b"invalid_msg"
 T_RECEIVER_SYN = 3000
-RECEIVER_ADDRESS = ("127.0.0.1", 8080)
+RECEIVER_ADDRESS = ("127.0.0.1", int(sys.argv[2]))
 x = ' '
+i = 0
 
 #sock init
 def socket_init():
@@ -56,10 +56,31 @@ def accept_incoming(sock, RSA_PUBLIC_KEY, max_nr_of_clients):
     }
 
 #verify checksum on receiver side
-def verify_chksm(sock, MSG_FROM_SENDER, chksm, SENDER_ADDRESS):
+def verify_chksm(sock, MSG_FROM_SENDER, chksm, SENDER_ADDRESS, type_of_sending, send_to_address):
+  global i
+  #error msg-s depending on type
+  if type_of_sending == 'broadcast':
+    ERROR_MSG = json_bytes_dumps({
+      'msg': MSG_FROM_SENDER,
+      'type': 'invalid_msg',
+      'type_of_sending': type_of_sending
+    })
+  elif type_of_sending == 'send':
+    ERROR_MSG = json_bytes_dumps({
+      'msg': MSG_FROM_SENDER,
+      'type': 'invalid_msg',
+      'type_of_sending': type_of_sending,
+      'send_to_address': send_to_address
+    })
+  
   #hash msg and verify if it's equal with checksum
   hashed_msg = str.encode(MSG_FROM_SENDER)
-  hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
+  i = i + 1
+  if i > 5:
+    hashed_msg = hashlib.sha1(hashed_msg).hexdigest()
+  else:
+    hashed_msg = hashlib.sha1(b'hashed_msg').hexdigest()
+
   if chksm != hashed_msg:
     #if not valid send to sender error msg
     sock.sendto(ERROR_MSG, SENDER_ADDRESS)
@@ -146,7 +167,7 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
   if 'msg' in recv:
     #verify the cheksum
     #if chksm not valid retransmit
-    verification = verify_chksm(sock, recv['msg'], recv['chksm'], recv['SENDER_ADDRESS'])
+    verification = verify_chksm(sock, recv['msg'], recv['chksm'], recv['SENDER_ADDRESS'], recv['type_of_sending'], recv['send_to_address'])
     if verification:
       #broadcast
       if recv['type_of_sending'] == 'broadcast':
@@ -180,6 +201,7 @@ def recv_from_sender_and_verify(sock, RSA_PRIVATE_KEY, recv_object):
           valid_json = json_bytes_dumps(valid_json)
           print("Such address does not exist!")
           sock.sendto(valid_json, recv['SENDER_ADDRESS'])
+
 #broadcast method
 def broadcast(sock, msg):
   connected_clients = get_connected_senders()

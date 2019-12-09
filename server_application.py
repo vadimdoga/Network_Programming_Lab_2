@@ -1,9 +1,10 @@
 from protocol.receiver import Receiver
 from protocol.library.receiver.protocol_receiver import recv_from_sender_and_verify, accept_incoming, get_connected_senders
 from concurrent.futures import ThreadPoolExecutor
-
+import sys
 x = ' '
 # here joins clients
+
 def join_clients(receiver, max_nr_of_clients):
   while True:
     #wait for receive
@@ -21,4 +22,4 @@ def join_clients(receiver, max_nr_of_clients):
 if __name__ == "__main__":
   receiver = Receiver()
   #parameters receiver and max nr of clients that can connect
-  join_clients(receiver, 2)
+  join_clients(receiver, int(sys.argv[3]))

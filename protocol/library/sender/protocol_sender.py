@@ -1,9 +1,9 @@
 from protocol.library.protocol_header import Header
 from protocol.library.protocol_crypto import encrypt_json
 from protocol.library.protocol_general import json_bytes_dumps, json_bytes_loads, convert_json_el_to_str, BUFFER_SIZE
-import hashlib, socket, os
+import hashlib, socket, os, sys
 
-RECEIVER_ADDRESS = ("127.0.0.1", 8080)
+RECEIVER_ADDRESS = ("127.0.0.1", int(sys.argv[2]))
 T_SENDER_SYN = 2000
 AES_KEY = b''
 RSA_PUBLIC_KEY = b''
@@ -51,13 +51,14 @@ def send_msg(sender, MSG_FROM_SENDER, type_of_sending, PORT):
     send_to_address = ("127.0.0.1", PORT)
   #create dict with msg and cheksum
   json_to_send = create_json(MSG_FROM_SENDER, type_of_sending, send_to_address)
+
   #udp connection
   if sender.handshake:
     #send to receiver
     sender.sock.sendto(json_to_send, RECEIVER_ADDRESS)
       
 #verify receiver response on validity of checksum
-def verify_chksum(msg_from_receiver):
+def verify_chksum(msg_from_receiver, sender):
   if 'type' in msg_from_receiver:
     if msg_from_receiver['type'] == 'msg':
       #print message in console
@@ -76,11 +77,19 @@ def verify_chksum(msg_from_receiver):
       print("\nCONNECTED CLIENTS: {}".format(msg_from_receiver['clients']))
     elif msg_from_receiver['type'] == 'invalid port':
       print(x * 15 + "INVALID PORT. THE MESSAGE WAS NOT SENT.")
-      
-  #if invalid message retransmit
-  elif msg_from_receiver == 'invalid_msg':
-    #retransmission
-    print(x * 10 + "Invalid msg, retransmitting message.")
+    
+    #if invalid message retransmit
+    elif msg_from_receiver['type'] == 'invalid_msg':
+      #retransmission
+      print(x * 10 + "Invalid msg, retransmitting message.")
+      #retransimssion based on type of sending
+      if msg_from_receiver['type_of_sending'] == 'broadcast':
+        #send msg with type broadcast
+        send_msg(sender, msg_from_receiver['msg'], msg_from_receiver['type_of_sending'], '')
+      elif msg_from_receiver['type_of_sending'] == 'send':
+        #send msg with type send
+        r_PORT = msg_from_receiver['send_to_address'][1]
+        send_msg(sender, msg_from_receiver['msg'], msg_from_receiver['type_of_sending'], r_PORT)
 
 def recv_msg(sender):
   if sender.handshake:
@@ -90,7 +99,7 @@ def recv_msg(sender):
       msg_from_receiver = json_bytes_loads(msg_from_receiver[0])
 
       #based on recv from receiver, check if data is valid
-      verify_chksum(msg_from_receiver)
+      verify_chksum(msg_from_receiver, sender)
       
 #send to receiver to stop connection by sending a SYN and waiting for and updated ACK
 def terminate_receiver_connection(sock):
