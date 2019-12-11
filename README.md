@@ -20,6 +20,7 @@ Implementing own protocol based on UDP.
 ```
 
 ## UML State Machine
+![photo_2019-12-10_09-05-21](https://user-images.githubusercontent.com/43139007/70603328-f8eac500-1bfe-11ea-930c-47b5f7186599.jpg)
 
 
 ## Built With
