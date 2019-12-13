@@ -4,7 +4,7 @@
 
 ## Portocol Side
 
-Implementing own protocol based on UDP.
+Implement own protocol based on UDP.
 
 ### Mandatory Tasks
 
@@ -24,26 +24,27 @@ Implementing own protocol based on UDP.
 
 ## Application Side
 
+Implement application based on created protocol.
+
 ### Mandatory Tasks
 ```
 3.To prove that everything is working as intended, make a server and a client using this nice protocol of yours.
 ```
 ### Description
-I made a chat application in command line based on my protocol. Features?
 
-1. A set of commands to control the application
+Application: Chat in command line with multiple connections.
+Commands?
+
 * **connect** - for connection to server
 * **send** - for sending to a specific connected PORT(client)
 * **broadcast** - for sending to all connected PORTS(clients)
 * **clients** - to see all connected PORTS(clients)
 * **stop** - to disconnect from server
 * **stop server** - to stop the server
-2. Multiple Connection
-3. Limit nr of clients for connection
 
 ### How to RUN?
 ```
-python3 server_application.py BUFFER_SIZE PORT NR_OF_ClIENTS
+python3 server_application.py BUFFER_SIZE PORT MAX_NR_OF_ClIENTS
 python3 client_application.py BUFFER_SIZE PORT
 ```
 ## Built With
