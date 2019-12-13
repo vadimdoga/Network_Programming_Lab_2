@@ -42,10 +42,10 @@ I made a chat application in command line based on my protocol. Features?
 3. Limit nr of clients for connection
 
 ### How to RUN?
-
+```
 python3 server_application.py BUFFER_SIZE PORT NR_OF_ClIENTS
 python3 client_application.py BUFFER_SIZE PORT
-
+```
 ## Built With
 
 * [Python](https://www.python.org/)
